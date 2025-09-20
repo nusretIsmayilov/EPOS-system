@@ -4,7 +4,7 @@ ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'front_staff';
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'kitchen_staff';
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'cashier';
 
--- Create a table to define role permissions
+-- Create permissions table and functions
 CREATE TABLE public.role_permissions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   role user_role NOT NULL,
