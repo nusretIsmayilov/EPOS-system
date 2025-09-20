@@ -42,9 +42,6 @@ CREATE TABLE public.restaurant_packages (
   UNIQUE(restaurant_id, package_id)
 );
 
--- Update user_role enum to include system_super_admin
-ALTER TYPE user_role ADD VALUE 'system_super_admin' BEFORE 'super_admin';
-
 -- Add restaurant_id to profiles table
 ALTER TABLE public.profiles 
 ADD COLUMN restaurant_id UUID REFERENCES public.restaurants(id) ON DELETE CASCADE;

@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create custom types
-CREATE TYPE public.user_role AS ENUM ('super_admin', 'admin', 'manager', 'staff', 'customer');
+CREATE TYPE public.user_role AS ENUM ('system_super_admin', 'super_admin', 'admin', 'manager', 'staff', 'customer', 'front_staff', 'kitchen_staff', 'cashier', 'owner');
 CREATE TYPE public.order_status AS ENUM ('pending', 'preparing', 'ready', 'delivered', 'cancelled');
 CREATE TYPE public.reservation_status AS ENUM ('pending', 'confirmed', 'seated', 'completed', 'cancelled');
 CREATE TYPE public.table_status AS ENUM ('available', 'occupied', 'reserved', 'maintenance');
