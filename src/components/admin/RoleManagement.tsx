@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Users, UserPlus, Shield, Edit2 } from 'lucide-react';
+import { UserRole } from '@/integrations/supabase/types';
 
 interface StaffMember {
   id: string;
@@ -20,7 +21,7 @@ interface StaffMember {
   position: string;
   profile_id: string;
   profile: {
-    role: string;
+    role: UserRole;
   };
 }
 
@@ -49,7 +50,7 @@ export function RoleManagement() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
-  const [newRole, setNewRole] = useState('');
+  const [newRole, setNewRole] = useState<UserRole | ''>('');
   const { toast } = useToast();
   const { profile } = useAuth();
 
@@ -92,7 +93,7 @@ export function RoleManagement() {
     }
   };
 
-  const updateStaffRole = async (staffMember: StaffMember, newRole: string) => {
+  const updateStaffRole = async (staffMember: StaffMember, newRole: UserRole) => {
     try {
       if (!staffMember.profile_id) {
         throw new Error('Staff member has no associated profile');
@@ -100,7 +101,7 @@ export function RoleManagement() {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole as any })
+        .update({ role: newRole })
         .eq('id', staffMember.profile_id);
 
       if (error) throw error;
@@ -125,9 +126,9 @@ export function RoleManagement() {
     }
   };
 
-  const openRoleDialog = (staff: StaffMember) => {
+  const openRoleDialog = (staff: StaffMember, newRole: UserRole) => {
     setSelectedStaff(staff);
-    setNewRole(staff.profile?.role || '');
+    setNewRole(newRole);
     setDialogOpen(true);
   };
 
@@ -220,7 +221,7 @@ export function RoleManagement() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openRoleDialog(staff)}
+                        onClick={() => openRoleDialog(staff, newRole as UserRole)}
                         className="flex items-center gap-2"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -248,11 +249,11 @@ export function RoleManagement() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="role">New Role</Label>
-              <Select value={newRole} onValueChange={setNewRole}>
+              <Select value={newRole} onValueChange={(value)=>setNewRole(value as UserRole)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='bg-white'>
                   <SelectItem value="owner">Owner</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
@@ -267,7 +268,7 @@ export function RoleManagement() {
             {newRole && (
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Role Description:</strong> {roleDescriptions[newRole as keyof typeof roleDescriptions]}
+                  <strong>Role Description:</strong> {roleDescriptions[newRole as UserRole]}
                 </p>
               </div>
             )}
@@ -280,7 +281,7 @@ export function RoleManagement() {
                 Cancel
               </Button>
               <Button
-                onClick={() => selectedStaff && updateStaffRole(selectedStaff, newRole)}
+                onClick={() => selectedStaff && updateStaffRole(selectedStaff, newRole as UserRole)}
                 disabled={!newRole || newRole === selectedStaff?.profile?.role}
               >
                 Update Role

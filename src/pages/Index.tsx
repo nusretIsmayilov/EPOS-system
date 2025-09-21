@@ -26,10 +26,8 @@ export default function Index() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('Index useEffect - checking redirect:', { loading, isSystemSuperAdmin, profile });
     // Only redirect if we're not loading and the user is confirmed to be system super admin
     if (!loading && isSystemSuperAdmin) {
-      console.log('Redirecting system super admin to /system-admin');
       navigate('/system-admin');
     }
   }, [isSystemSuperAdmin, loading, navigate, profile]);

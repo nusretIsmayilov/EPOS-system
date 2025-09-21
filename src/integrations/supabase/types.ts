@@ -6,6 +6,43 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export const Constants = {
+  public: {
+    Enums: {
+      order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
+      reservation_status: [
+        "pending",
+        "confirmed",
+        "seated",
+        "completed",
+        "cancelled",
+      ],
+      staff_status: ["active", "inactive", "on_break"],
+      table_status: ["available", "occupied", "reserved", "maintenance"],
+      user_role: [
+        "super_admin",
+        "admin",
+        "manager",
+        "staff",
+        "customer",
+        "system_super_admin",
+        "owner",
+        "front_staff",
+        "kitchen_staff",
+        "cashier",
+      ],
+    },
+  },
+} as const
+
+type StaffStatus = typeof Constants.public.Enums.staff_status[number]
+
+export type UserRole = typeof Constants.public.Enums.user_role[number]
+
+export type Profile = Tables<"profiles">
+
+export type Staff = Tables<"staff">
+
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -433,7 +470,7 @@ export type Database = {
           id: string
           phone: string | null
           restaurant_id: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: UserRole
           updated_at: string
           user_id: string
         }
@@ -444,7 +481,7 @@ export type Database = {
           id?: string
           phone?: string | null
           restaurant_id?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: UserRole
           updated_at?: string
           user_id: string
         }
@@ -455,7 +492,7 @@ export type Database = {
           id?: string
           phone?: string | null
           restaurant_id?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: UserRole
           updated_at?: string
           user_id?: string
         }
@@ -690,19 +727,19 @@ export type Database = {
           created_at: string
           id: string
           permission: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: UserRole
         }
         Insert: {
           created_at?: string
           id?: string
           permission: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: UserRole
         }
         Update: {
           created_at?: string
           id?: string
           permission?: string
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: UserRole
         }
         Relationships: []
       }
@@ -724,7 +761,7 @@ export type Database = {
           restaurant_id: string | null
           shift_end: string | null
           shift_start: string | null
-          status: Database["public"]["Enums"]["staff_status"]
+          status: StaffStatus
           updated_at: string
         }
         Insert: {
@@ -744,7 +781,7 @@ export type Database = {
           restaurant_id?: string | null
           shift_end?: string | null
           shift_start?: string | null
-          status?: Database["public"]["Enums"]["staff_status"]
+          status?: StaffStatus
           updated_at?: string
         }
         Update: {
@@ -764,7 +801,7 @@ export type Database = {
           restaurant_id?: string | null
           shift_end?: string | null
           shift_start?: string | null
-          status?: Database["public"]["Enums"]["staff_status"]
+          status?: StaffStatus
           updated_at?: string
         }
         Relationships: [
@@ -817,17 +854,7 @@ export type Database = {
         | "cancelled"
       staff_status: "active" | "inactive" | "on_break"
       table_status: "available" | "occupied" | "reserved" | "maintenance"
-      user_role:
-        | "super_admin"
-        | "admin"
-        | "manager"
-        | "staff"
-        | "customer"
-        | "system_super_admin"
-        | "owner"
-        | "front_staff"
-        | "kitchen_staff"
-        | "cashier"
+      user_role: UserRole
     }
     CompositeTypes: {
       [_ in never]: never
@@ -951,32 +978,3 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
-      reservation_status: [
-        "pending",
-        "confirmed",
-        "seated",
-        "completed",
-        "cancelled",
-      ],
-      staff_status: ["active", "inactive", "on_break"],
-      table_status: ["available", "occupied", "reserved", "maintenance"],
-      user_role: [
-        "super_admin",
-        "admin",
-        "manager",
-        "staff",
-        "customer",
-        "system_super_admin",
-        "owner",
-        "front_staff",
-        "kitchen_staff",
-        "cashier",
-      ],
-    },
-  },
-} as const
