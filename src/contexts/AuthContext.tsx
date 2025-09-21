@@ -1,26 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Profile {
-  id: string;
-  user_id: string;
-  email: string | null;
-  full_name: string | null;
-  phone: string | null;
-  role: 'system_super_admin' | 'super_admin' | 'admin' | 'manager' | 'staff' | 'customer' | 'owner' | 'front_staff' | 'kitchen_staff' | 'cashier';
-  restaurant_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Profile } from '@/integrations/supabase/types';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string, role?: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error }>;
+  signUp: (email: string, password: string, fullName: string, role?: string) => Promise<{ error }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isStaff: boolean;
@@ -37,20 +26,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
-      console.log('Profile fetch result:', { data, error });
-
       if (!error && data) {
         setProfile(data);
-        console.log('Profile set successfully:', data);
       } else if (!data && !error) {
-        console.log('No profile found, creating one...');
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert({
@@ -64,7 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!createError && newProfile) {
           setProfile(newProfile);
-          console.log('New profile created:', newProfile);
         } else {
           console.error('Failed to create profile:', createError);
           setProfile(null);
@@ -87,7 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
         
         if (!mounted) return;
         
@@ -112,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Initial session check:', session?.user?.id);
         
         if (!mounted) return;
         
@@ -194,17 +175,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isSystemSuperAdmin = profile?.role === 'system_super_admin';
   const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'manager';
   const isStaff = isAdmin || profile?.role === 'staff';
-
-  // Debug logging
-  console.log('Auth Context State:', {
-    user: user?.id,
-    profile: profile,
-    role: profile?.role,
-    isSystemSuperAdmin,
-    isAdmin,
-    isStaff,
-    loading
-  });
 
   const value = {
     user,

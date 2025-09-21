@@ -46,17 +46,14 @@ export default function MenuItems() {
 
   const handleAddItem = () => {
     // TODO: Implement add item functionality
-    console.log('Add item clicked');
   };
 
   const handleEdit = (id: string) => {
     // TODO: Implement edit functionality
-    console.log('Edit item:', id);
   };
 
   const handleDelete = (id: string) => {
     // TODO: Implement delete functionality
-    console.log('Delete item:', id);
   };
 
   return (

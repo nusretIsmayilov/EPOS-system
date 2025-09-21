@@ -16,8 +16,6 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, profile, loading, isAdmin, isStaff } = useAuth();
 
-  console.log('ProtectedRoute state:', { user: !!user, profile: !!profile, loading, requireAdmin, requireStaff });
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
