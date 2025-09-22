@@ -10,7 +10,20 @@ import { AIChatbot } from "@/components/ai/AIChatbot";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-
+import UpdateDataForm from "@/components/modals/UpdateDataForm";
+const menuItemStructure = {
+  required: {
+    name: "",
+    price: 0,
+    is_available: true,
+  },
+  optional: {
+    calories: 0,
+    description: "",
+    image_url: "",
+    prep_time: 0,
+  },
+};
 interface MenuItem {
   id: string;
   name: string;
@@ -78,6 +91,7 @@ export default function MenuItems() {
           </PageHeader>
 
           <div className="flex-1 p-6">
+            <UpdateDataForm initialData = {menuItemStructure}/>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {isLoading ? (
                 // Loading skeletons
