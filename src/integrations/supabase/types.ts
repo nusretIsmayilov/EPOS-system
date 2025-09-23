@@ -42,7 +42,7 @@ export type UserRole = typeof Constants.public.Enums.user_role[number]
 export type Profile = Tables<"profiles">
 
 export type Staff = Tables<"staff">
-export type MenuItems = Tables<"menu_items">
+export type MenuItem = Tables<"menu_items">
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
