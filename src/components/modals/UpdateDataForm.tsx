@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "../ui/input";
 import {
@@ -7,17 +8,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useEffect, useState } from "react";
 import { Label } from "../ui/label";
 
-const SelectElement = ({ selectItems, value, onChange }) => {
+const SelectElement = ({ selectItems, value, onChange }: any) => {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
         <SelectValue placeholder="Select a value" />
       </SelectTrigger>
       <SelectContent className="bg-white">
-        {selectItems.map(({ id, value, label }) => (
+        {selectItems?.map(({ id, value, label }: any) => (
           <SelectItem key={id} value={value}>
             {label}
           </SelectItem>
@@ -31,10 +31,11 @@ export default function UpdateDataForm({
   onSave,
   onCancel,
   initialData,
-  fields,
+  fields = [],
   isOpen,
-}) {
-  const [formData, setFormData] = useState(initialData);
+}: any) {
+  const [formData, setFormData] = useState<any>(initialData || {});
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     setFormData(initialData || {});
@@ -45,22 +46,58 @@ export default function UpdateDataForm({
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e, data) => {
+  const getMissingRequiredFields = (data: any) => {
+    return (fields || [])
+      .filter((f: any) => f.isRequired)
+      .filter((f: any) => {
+        const val = data?.[f.name];
+        return val === undefined || val === null || val === "";
+      })
+      .map((f: any) => f.label || f.name);
+  };
+
+  const handleSubmit = (e: React.FormEvent, data: any) => {
     e.preventDefault();
+    const missing = getMissingRequiredFields(data);
+    if (missing.length > 0) {
+      window.alert(`Please fill in: ${missing.join(", ")}`);
+      return;
+    }
     onSave(data);
     onCancel();
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (formRef.current && !formRef.current.contains(e.target as Node)) {
+      const confirmSave = window.confirm("Do you want to save changes?");
+      if (confirmSave) {
+        const missing = getMissingRequiredFields(formData);
+        if (missing.length > 0) {
+          window.alert(`Please fill in: ${missing.join(", ")}`);
+          return;
+        }
+        onSave(formData);
+        onCancel();
+      } else {
+        onCancel();
+      }
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={handleOverlayClick}
+    >
       <form
-        onSubmit={(e)=>handleSubmit(e, formData)}
-        className="flex flex-col gap-[20px] w-[550px] h-[520px] bg-white space-y-3.5  rounded-[20px] pt-4 overflow-y-auto p-10"
+        ref={formRef}
+        onSubmit={(e) => handleSubmit(e, formData)}
+        className="flex flex-col gap-[20px] w-[550px] h-[520px] bg-white space-y-3.5 rounded-[20px] pt-4 overflow-y-auto p-10"
       >
         {fields.map(
-          ({ id, label, name, type, placeholder, selectItems, isRequired }) => {
+          ({ id, label, name, type, placeholder, selectItems, isRequired }: any) => {
             if (type === "select") {
               return (
                 <div key={id} className="w-[450px] h-[50px] mx-auto">
@@ -70,8 +107,8 @@ export default function UpdateDataForm({
                   <SelectElement
                     selectItems={selectItems}
                     value={formData[name]}
-                    onChange={(val) =>
-                      setFormData((prev) => ({ ...prev, [name]: val }))
+                    onChange={(val: any) =>
+                      setFormData((prev: any) => ({ ...prev, [name]: val }))
                     }
                   />
                 </div>
@@ -89,7 +126,7 @@ export default function UpdateDataForm({
                   required={isRequired}
                   id={name}
                   name={name}
-                  value={formData[name] || ""}
+                  value={formData[name] ?? ""}
                   onChange={handleChange}
                   className="bg-gray-200 w-[450px] h-[50px] mx-auto"
                 />
