@@ -172,7 +172,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="text-sidebar-foreground text-2xl font-bold">ell</div>
