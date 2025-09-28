@@ -14,7 +14,7 @@ import UpdateDataForm from "@/components/modals/UpdateDataForm";
 import { MenuItem } from "@/integrations/supabase/types";
 import { useEffect, useState } from "react";
 
-interface MenuItemModified extends MenuItem {
+export interface MenuItemModified extends MenuItem {
   menu_categories?: {
     name: string;
   } | null;

@@ -10,33 +10,36 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
+
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 export default function POS() {
-  const [cart, setCart] = useState<Array<{id: string, name: string, price: number, quantity: number}>>([]);
+  const [cart, setCart] = useState<Array<{ id: string, name: string, price: number, quantity: number }>>([]);
   const { data: menuItems, isLoading } = useQuery({
-      queryKey: ["menu-items"],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("menu_items")
-          .select(
-            `
+    queryKey: ["menu-items"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("menu_items")
+        .select(
+          `
             *,
             menu_categories (
               name
             )
           `
-          )
-          .order("name");
-  
-        if (error) throw error;
-        return data;
-      },
-    });
+        )
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const addToCart = (item: typeof menuItems[0]) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
     if (existingItem) {
-      setCart(cart.map(cartItem => 
-        cartItem.id === item.id 
+      setCart(cart.map(cartItem =>
+        cartItem.id === item.id
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       ));
@@ -60,6 +63,17 @@ export default function POS() {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const prepareStripeItems = () => {
+    return cart.map(item => ({
+      price_data: {
+        currency: "usd",
+        product_data: { name: item.name },
+        unit_amount: Math.round(item.price * 100), // convert dollars to cents
+      },
+      quantity: item.quantity,
+    }));
+  };
 
   return (
     <SidebarProvider>
@@ -152,7 +166,7 @@ export default function POS() {
                             </div>
                           ))}
                         </div>
-                        
+
                         <div className="border-t pt-4">
                           <div className="flex justify-between items-center font-bold text-lg">
                             <span>Total:</span>
@@ -160,7 +174,40 @@ export default function POS() {
                           </div>
                         </div>
 
-                        <Button className="w-full" size="lg">
+                        <Button
+                          className="w-full"
+                          size="lg"
+                          onClick={async () => {
+                            if (cart.length === 0) return;
+
+                            console.log(cart);
+
+                            const items = prepareStripeItems();
+
+                            try {
+                              const res = await fetch(
+                                "https://vhvjfndzluxlmlnrkagj.functions.supabase.co/create-checkout-session",
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": `Bearer ${supabaseAnonKey}`,
+                                  },
+                                  body: JSON.stringify({ items: cart }),
+                                }
+                              );
+
+                              const data = await res.json();
+                              if (data.url) {
+                                window.location.href = data.url; // redirect to Stripe Checkout
+                              } else {
+                                console.error("Checkout URL not returned");
+                              }
+                            } catch (err) {
+                              console.error("Error creating checkout session:", err);
+                            }
+                          }}
+                        >
                           <CreditCard className="w-4 h-4 mr-2" />
                           Process Payment
                         </Button>
