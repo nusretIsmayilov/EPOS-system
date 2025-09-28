@@ -4,20 +4,33 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, ShoppingCart, CreditCard } from "lucide-react";
+import { Plus, Minus, ShoppingCart, CreditCard, Trash } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function POS() {
-  const [cart, setCart] = useState<Array<{id: number, name: string, price: number, quantity: number}>>([]);
-
-  const menuItems = [
-    { id: 1, name: "Butter Chicken", price: 18.99, category: "Main Course" },
-    { id: 2, name: "Dal Makhani", price: 14.99, category: "Main Course" },
-    { id: 3, name: "Tandoori Salmon", price: 24.99, category: "Seafood" },
-    { id: 4, name: "Mango Lassi", price: 4.99, category: "Beverage" },
-    { id: 5, name: "Gulab Jamun", price: 6.99, category: "Dessert" },
-    { id: 6, name: "Biryani", price: 16.99, category: "Main Course" },
-  ];
+  const [cart, setCart] = useState<Array<{id: string, name: string, price: number, quantity: number}>>([]);
+  const { data: menuItems, isLoading } = useQuery({
+      queryKey: ["menu-items"],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select(
+            `
+            *,
+            menu_categories (
+              name
+            )
+          `
+          )
+          .order("name");
+  
+        if (error) throw error;
+        return data;
+      },
+    });
 
   const addToCart = (item: typeof menuItems[0]) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
@@ -32,7 +45,11 @@ export default function POS() {
     }
   };
 
-  const updateQuantity = (id: number, change: number) => {
+  const removeFromCart = (id: string) => {
+    setCart(cart.filter(item => item.id !== id));
+  }
+
+  const updateQuantity = (id: string, change: number) => {
     setCart(cart.map(item => {
       if (item.id === id) {
         const newQuantity = item.quantity + change;
@@ -62,15 +79,28 @@ export default function POS() {
           <div className="flex-1 p-6">
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Menu Items */}
-              <div className="lg:col-span-2">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i}>
+                    <CardHeader>
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : <div className="lg:col-span-2">
                 <h2 className="text-xl font-semibold mb-4">Menu Items</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {menuItems.map((item) => (
                     <Card key={item.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addToCart(item)}>
                       <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-center">
                           <CardTitle className="text-lg">{item.name}</CardTitle>
-                          <Badge variant="secondary">{item.category}</Badge>
+                          {item?.menu_categories?.name && <Badge variant="secondary">{item?.menu_categories?.name}</Badge>}
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -84,7 +114,7 @@ export default function POS() {
                     </Card>
                   ))}
                 </div>
-              </div>
+              </div>}
 
               {/* Cart */}
               <div>
@@ -104,7 +134,7 @@ export default function POS() {
                           {cart.map((item) => (
                             <div key={item.id} className="flex items-center justify-between">
                               <div className="flex-1">
-                                <p className="font-medium">{item.name}</p>
+                                <p className="font-medium w-12 truncate">{item.name}</p>
                                 <p className="text-sm text-muted-foreground">${item.price}</p>
                               </div>
                               <div className="flex items-center gap-2">
@@ -116,6 +146,9 @@ export default function POS() {
                                   <Plus className="w-3 h-3" />
                                 </Button>
                               </div>
+                              <Button className="ml-[10px]" size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
+                                <Trash className="w-3 h-3" />
+                              </Button>
                             </div>
                           ))}
                         </div>
