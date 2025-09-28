@@ -1,28 +1,44 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
+import AddTableForm from "@/components/AddTableForm";
 
 export default function Tables() {
-  const tables = [
-    { id: 1, number: "T1", capacity: 4, status: "Available", location: "Main Hall" },
-    { id: 2, number: "T2", capacity: 2, status: "Occupied", location: "Main Hall" },
-    { id: 3, number: "T3", capacity: 6, status: "Reserved", location: "Private Room" },
-    { id: 4, number: "T4", capacity: 4, status: "Available", location: "Terrace" },
-    { id: 5, number: "T5", capacity: 8, status: "Occupied", location: "VIP Section" },
-    { id: 6, number: "T6", capacity: 2, status: "Available", location: "Main Hall" },
-  ];
+  const [tables, setTables] = useState<any[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Available': return 'bg-green-100 text-green-800';
-      case 'Occupied': return 'bg-red-100 text-red-800';
-      case 'Reserved': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "Available": return "bg-green-100 text-green-800";
+      case "Occupied":  return "bg-red-100 text-red-800";
+      case "Reserved":  return "bg-yellow-100 text-yellow-800";
+      default:          return "bg-gray-100 text-gray-800";
     }
   };
+
+  async function fetchTables() {
+    const { data, error } = await supabase.from("tables").select("*").order("id");
+    if (!error) setTables(data || []);
+  }
+
+  async function addTable(data: any) {
+    const { error } = await supabase.from("tables").insert(data);
+    if (!error) {
+      await fetchTables();
+      setShowAddForm(false);
+    } else {
+      alert(error.message);
+    }
+  }
+
+  useEffect(() => {
+    fetchTables();
+  }, []);
 
   return (
     <SidebarProvider>
@@ -37,7 +53,7 @@ export default function Tables() {
                 <p className="text-muted-foreground">Manage restaurant tables and seating</p>
               </div>
             </div>
-            <Button>
+            <Button onClick={() => setShowAddForm(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Table
             </Button>
@@ -56,7 +72,9 @@ export default function Tables() {
                       <Users className="w-4 h-4" />
                       <span>{table.capacity} seats</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(table.status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(table.status)}`}
+                    >
                       {table.status}
                     </span>
                   </CardContent>
@@ -66,6 +84,13 @@ export default function Tables() {
           </div>
         </main>
       </div>
+
+      {/* Modal Form */}
+      <AddTableForm
+        isOpen={showAddForm}
+        onSave={addTable}
+        onCancel={() => setShowAddForm(false)}
+      />
     </SidebarProvider>
   );
 }
