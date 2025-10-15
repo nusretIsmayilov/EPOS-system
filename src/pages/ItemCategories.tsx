@@ -37,9 +37,7 @@ export default function ItemCategories() {
     },
   ];
 
-  // ✅ Save veya Update işlemi
   const handleSave = (data: any) => {
-    // gerekli alanları kontrol et
     if (!data.name || !data.description) {
       window.alert("Please fill in both Name and Description before saving.");
       return;
@@ -62,13 +60,11 @@ export default function ItemCategories() {
     setActiveCategory({});
   };
 
-  // ✅ Edit işlemi
   const handleEdit = (category: any) => {
     setActiveCategory(category);
     setModalOpen(true);
   };
 
-  // ✅ Delete işlemi
   const handleDelete = (id: number) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this category?"

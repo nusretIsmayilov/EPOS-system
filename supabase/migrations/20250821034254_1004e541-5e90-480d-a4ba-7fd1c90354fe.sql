@@ -3,6 +3,7 @@ ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'owner';
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'front_staff';
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'kitchen_staff';
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'cashier';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'customer';
 
 -- Create permissions table and functions
 CREATE TABLE public.role_permissions (
