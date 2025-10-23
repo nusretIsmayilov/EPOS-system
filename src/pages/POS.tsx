@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Minus, ShoppingCart, CreditCard, Trash } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const projectRef = import.meta.env.VITE_PROJECT_REF;
 
 export default function POS() {
   const [cart, setCart] = useState<Array<{ id: string, name: string, price: number, quantity: number }>>([]);
+  const queryClient = useQueryClient();
   const { data: menuItems, isLoading } = useQuery({
     queryKey: ["menu-items"],
     queryFn: async () => {
@@ -73,6 +75,39 @@ export default function POS() {
       },
       quantity: item.quantity,
     }));
+  };
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+
+    const items = prepareStripeItems();
+    const success_url = `${window.location.origin}/payment-success`;
+    const cancel_url = `${window.location.origin}/pos`;
+    
+    try {
+      const res = await fetch(
+        `https://${projectRef}.functions.supabase.co/create-checkout-session`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({ items: cart, success_url, cancel_url, cart_items: cart, total_amount: total }),
+        }
+      );
+
+      const data = await res.json();
+      if (data.url && data.sessionData) {
+        localStorage.setItem('stripe_checkout_session', JSON.stringify(cart));
+        window.location.href = data.url;
+        setCart([]);
+      } else {
+        console.error("Checkout URL not returned");
+      }
+    } catch (err) {
+      console.error("Error creating checkout session:", err);
+    }
   };
 
   return (
@@ -177,36 +212,7 @@ export default function POS() {
                         <Button
                           className="w-full"
                           size="lg"
-                          onClick={async () => {
-                            if (cart.length === 0) return;
-
-                            console.log(cart);
-
-                            const items = prepareStripeItems();
-
-                            try {
-                              const res = await fetch(
-                                "https://vhvjfndzluxlmlnrkagj.functions.supabase.co/create-checkout-session",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    "Authorization": `Bearer ${supabaseAnonKey}`,
-                                  },
-                                  body: JSON.stringify({ items: cart }),
-                                }
-                              );
-
-                              const data = await res.json();
-                              if (data.url) {
-                                window.location.href = data.url; // redirect to Stripe Checkout
-                              } else {
-                                console.error("Checkout URL not returned");
-                              }
-                            } catch (err) {
-                              console.error("Error creating checkout session:", err);
-                            }
-                          }}
+                          onClick={handleCheckout}
                         >
                           <CreditCard className="w-4 h-4 mr-2" />
                           Process Payment

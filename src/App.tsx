@@ -35,6 +35,7 @@ import Payments from "./pages/Payments";
 import Settings from "./pages/Settings";
 import Inventory from "./pages/Inventory";
 import Report from "./pages/Report";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,12 @@ const App = () => (
             <Route path="/pos" element={
               <ProtectedRoute requireStaff>
                 <POS />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/payment-success" element={
+              <ProtectedRoute requireStaff>
+                <PaymentSuccess />
               </ProtectedRoute>
             } />
             
