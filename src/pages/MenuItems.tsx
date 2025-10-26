@@ -113,7 +113,7 @@ export default function MenuItems() {
           name: item.name,
           price: item.price,
           description: item.description,
-          is_available: String(item.is_available) === "true", // convert from string
+          is_available: String(item.is_available) === "true",
           prep_time: item.prep_time,
           calories: item.calories,
         })

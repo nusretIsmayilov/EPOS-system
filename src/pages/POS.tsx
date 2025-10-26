@@ -77,7 +77,7 @@ export default function POS() {
       price_data: {
         currency: "usd",
         product_data: { name: item.name },
-        unit_amount: Math.round(item.price * 100), // convert dollars to cents
+        unit_amount: Math.round(item.price * 100),
       },
       quantity: item.quantity,
     }));
@@ -174,7 +174,7 @@ export default function POS() {
                               key={item.id}
                               className="flex items-center justify-between gap-2"
                             >
-                              {/* Ürün adı ve fiyat */}
+                              
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium truncate max-w-[120px] md:max-w-[160px] lg:max-w-[200px]">
                                   {item.name}
@@ -184,7 +184,7 @@ export default function POS() {
                                 </p>
                               </div>
 
-                              {/* Adet kontrolü */}
+                              
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"
@@ -205,7 +205,7 @@ export default function POS() {
                                 </Button>
                               </div>
 
-                              {/* Silme butonu */}
+                              
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -249,7 +249,7 @@ export default function POS() {
 
                               const data = await res.json();
                               if (data.url) {
-                                window.location.href = data.url; // redirect to Stripe Checkout
+                                window.location.href = data.url;
                               } else {
                                 console.error("Checkout URL not returned");
                               }
