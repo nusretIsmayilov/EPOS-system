@@ -67,7 +67,7 @@ export default function AddOrderForm({
         .filter((item) => newItems.includes(item.name))
         .reduce((sum, item) => sum + (item.price || 0), 0);
 
-      return { ...prev, items: newItems, total: `${totalPrice}$` };
+      return { ...prev, items: newItems, total: `${totalPrice}` };
     });
   };
 

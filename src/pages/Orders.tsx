@@ -33,9 +33,23 @@ export default function Orders() {
   const fetchMenuItems = async () => {
     const { data, error } = await supabase
       .from("menu_items")
-      .select("name, price");
+      .select("id, name, price")
+      .eq("is_available", true);
     if (error) console.error("Menu fetch error:", error);
     else setMenuItems(data || []);
+  };
+
+
+  const getItemNames = (itemIds: any[]) => {
+    if (!Array.isArray(itemIds)) return [];
+
+    return itemIds.map((id) => {
+      if (typeof id === "string") {
+        const item = menuItems.find((m) => m.id === id || m.name === id);
+        return item ? item.name : id;
+      }
+      return "Unknown Item";
+    });
   };
 
   useEffect(() => {
@@ -43,8 +57,16 @@ export default function Orders() {
     fetchMenuItems();
   }, []);
 
-  
+
   const handleSaveOrder = async (data: any) => {
+    // isimleri ID'lere çevir
+    const itemIds = Array.isArray(data.items)
+      ? data.items.map((name) => {
+        const found = menuItems.find((m) => m.name === name);
+        return found ? found.id : name;
+      })
+      : [];
+
     if (editingOrder) {
       // edit mode
       const { error } = await supabase
@@ -52,7 +74,7 @@ export default function Orders() {
         .update({
           customer: data.customer,
           table: data.table,
-          items: data.items,
+          items: itemIds,
           total: data.total,
           status: data.status,
           time: data.time,
@@ -65,16 +87,15 @@ export default function Orders() {
       }
       setEditingOrder(null);
     } else {
-     
       const nextNumber = orders.length + 1;
       const orderId = `Order #${String(nextNumber).padStart(3, "0")}`;
 
       const { error } = await supabase.from("orders").insert([
         {
-          order_id: orderId,
+          // order_id: orderId, new order edende order id erroru verir !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           customer: data.customer,
           table: data.table,
-          items: data.items,
+          items: itemIds,
           total: data.total,
           status: data.status,
           time: data.time,
@@ -90,7 +111,7 @@ export default function Orders() {
     await fetchOrders();
     alert("Order saved successfully!");
   };
- 
+
 
   const handleDeleteOrder = async (orderId: any) => {
     if (!confirm("Are you sure you want to delete this order?")) return;
@@ -116,7 +137,7 @@ export default function Orders() {
         return "bg-gray-100 text-gray-800";
     }
   };
- 
+
 
   const formatOrderId = (index: number) => {
     const num = String(index + 1).padStart(3, "0");
@@ -193,11 +214,11 @@ export default function Orders() {
                         <div className="flex items-center gap-4">
                           <span className="text-sm">
                             {Array.isArray(order.items)
-                              ? order.items.join(", ")
+                              ? getItemNames(order.items).join(", ")
                               : order.items}
                           </span>
                           <span className="text-lg font-bold">
-                            {order.total}
+                            ${order.total}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

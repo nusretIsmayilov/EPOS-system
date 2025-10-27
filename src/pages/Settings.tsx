@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Save, Bell, Shield, Palette, Globe } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export default function Settings() {
   return (
