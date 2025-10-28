@@ -90,8 +90,20 @@ export default function POS() {
     const items = prepareStripeItems();
     const success_url = `${window.location.origin}/payment-success`;
     const cancel_url = `${window.location.origin}/pos`;
-    
+
     try {
+      // Kullanıcı bilgisi (müşteri ID’si)
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error("Auth error:", userError);
+        return;
+      }
+
+      // Stripe checkout oluştur
       const res = await fetch(
         `https://${projectRef}.functions.supabase.co/create-checkout-session`,
         {
@@ -100,13 +112,42 @@ export default function POS() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${supabaseAnonKey}`,
           },
-          body: JSON.stringify({ items: cart, success_url, cancel_url, cart_items: cart, total_amount: total }),
+          body: JSON.stringify({
+            items: cart,
+            success_url,
+            cancel_url,
+            cart_items: cart,
+            total_amount: total,
+          }),
         }
       );
 
       const data = await res.json();
-      if (data.url && data.sessionData) {
-        localStorage.setItem('stripe_checkout_session', JSON.stringify(cart));
+
+      // Eğer Stripe URL döndüyse
+      if (data.url) {
+        // 🔹 Siparişi Supabase'e kaydet
+        const orderData: any = {
+          user_id: user?.id || null, // 🔥 müşteri bağlantısı burada değişti
+          items: cart.map((item) => item.id),
+          total: total,
+          status: "Pending",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          table: "POS Terminal",
+        };
+
+        const { error: orderError } = await supabase
+          .from("orders")
+          .insert([orderData]);
+
+        if (orderError) {
+          console.error("Order insert error:", orderError);
+        } else {
+          console.log("Order created successfully!");
+        }
+
+        // Stripe yönlendirmesi
+        localStorage.setItem("stripe_checkout_session", JSON.stringify(cart));
         window.location.href = data.url;
         setCart([]);
       } else {
@@ -116,6 +157,7 @@ export default function POS() {
       console.error("Error creating checkout session:", err);
     }
   };
+
 
   return (
     <SidebarProvider>
@@ -208,7 +250,7 @@ export default function POS() {
                               key={item.id}
                               className="flex items-center justify-between gap-2"
                             >
-                              
+
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium truncate max-w-[120px] md:max-w-[160px] lg:max-w-[200px]">
                                   {item.name}
@@ -218,7 +260,6 @@ export default function POS() {
                                 </p>
                               </div>
 
-                              
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"
@@ -239,7 +280,6 @@ export default function POS() {
                                 </Button>
                               </div>
 
-                              
                               <Button
                                 size="sm"
                                 variant="outline"

@@ -10,8 +10,7 @@ import { createClient } from "@supabase/supabase-js";
 import AddOrderForm from "@/components/modals/AddOrderForm";
 
 const supabaseUrl = "https://vhvjfndzluxlmlnrkagj.supabase.co";
-const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodmpmbmR6bHV4bG1sbnJrYWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMjc3NywiZXhwIjoyMDczNjc4Nzc3fQ.nv8Jo0sbaFUWUYSfgcpwd5zM3x-Nrq8O4VYnRwziUpI";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodmpmbmR6bHV4bG1sbnJrYWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMjc3NywiZXhwIjoyMDczNjc4Nzc3fQ.nv8Jo0sbaFUWUYSfgcpwd5zM3x-Nrq8O4VYnRwziUpI";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function Orders() {
@@ -23,7 +22,10 @@ export default function Orders() {
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select(`
+    *,
+    profiles:user_id ( full_name )
+  `)
       .order("created_at", { ascending: true });
 
     if (error) console.error("Fetch error:", error);
@@ -59,7 +61,6 @@ export default function Orders() {
 
 
   const handleSaveOrder = async (data: any) => {
-    // isimleri ID'lere çevir
     const itemIds = Array.isArray(data.items)
       ? data.items.map((name) => {
         const found = menuItems.find((m) => m.name === name);
@@ -92,7 +93,7 @@ export default function Orders() {
 
       const { error } = await supabase.from("orders").insert([
         {
-          // order_id: orderId, new order edende order id erroru verir !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // order_id: orderId, new order edende "order id" erroru verir !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           customer: data.customer,
           table: data.table,
           items: itemIds,
@@ -183,7 +184,7 @@ export default function Orders() {
                           {order.order_id || formatOrderId(index)}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {order.customer} • {order.table}
+                          {order.profiles?.full_name || "Unknown Customer"} • {order.table}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
