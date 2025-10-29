@@ -9,6 +9,8 @@ import { Plus, Package, AlertTriangle, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AddInventoryForm from "@/components/modals/AddInventoryForm";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
+import KitchenOrdersModal from "@/components/modals/KitchenOrdersModal";
+
 
 export default function Inventory() {
   const [inventory, setInventory] = useState<any[]>([]);
@@ -16,6 +18,8 @@ export default function Inventory() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
+
+  const [isKitchenOpen, setIsKitchenOpen] = useState(false);
 
   const fetchInventory = async () => {
     setLoading(true);
@@ -79,10 +83,15 @@ export default function Inventory() {
                 <p className="text-muted-foreground">Track and manage stock levels</p>
               </div>
             </div>
-            <Button onClick={() => setIsAddOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Item
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setIsAddOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Item
+              </Button>
+              <Button variant="secondary" onClick={() => setIsKitchenOpen(true)}>
+                🍳 Kitchen Orders
+              </Button>
+            </div>
           </PageHeader>
 
           <div className="flex-1 p-6">
@@ -141,7 +150,7 @@ export default function Inventory() {
                               <Trash2 className="w-4 h-4 mr-1" /> Delete
                             </Button>
 
-                            {item.current_stock < item.min_stock && (
+                            {/* {item.current_stock < item.min_stock && (
                               <Button
                                 size="sm"
                                 className="bg-red-600 hover:bg-red-700 text-white"
@@ -149,7 +158,7 @@ export default function Inventory() {
                               >
                                 <AlertTriangle className="w-4 h-4 mr-1" /> Order Now
                               </Button>
-                            )}
+                            )} */}
                           </div>
                         </div>
 
@@ -188,6 +197,13 @@ export default function Inventory() {
           { id: 6, label: "Supplier", name: "supplier", type: "text" },
         ]}
       />
+      <KitchenOrdersModal
+        isOpen={isKitchenOpen}
+        onClose={() => setIsKitchenOpen(false)}
+        inventory={inventory}
+      />
+
     </SidebarProvider>
+
   );
 }
