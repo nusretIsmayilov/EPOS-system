@@ -108,10 +108,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/pos" element={
-              <ProtectedRoute requireStaff>
-                <POS />
-              </ProtectedRoute>
-            } />
+              // <ProtectedRoute requireStaff>
+              //   <POS />
+              // </ProtectedRoute>
+              <POS />
+            } />  
 
             <Route path="/payment-success" element={
               <ProtectedRoute requireStaff>
