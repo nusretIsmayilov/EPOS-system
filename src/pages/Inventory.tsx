@@ -5,12 +5,10 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Package, AlertTriangle, Trash2, Pencil } from "lucide-react";
+import { Plus, Package, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AddInventoryForm from "@/components/modals/AddInventoryForm";
-import UpdateDataForm from "@/components/modals/UpdateDataForm";
 import KitchenOrdersModal from "@/components/modals/KitchenOrdersModal";
-
 
 export default function Inventory() {
   const [inventory, setInventory] = useState<any[]>([]);
@@ -18,7 +16,6 @@ export default function Inventory() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-
   const [isKitchenOpen, setIsKitchenOpen] = useState(false);
 
   const fetchInventory = async () => {
@@ -43,16 +40,16 @@ export default function Inventory() {
     else fetchInventory();
   };
 
-  const handleEdit = async (updatedData: any) => {
+  const handleEditSave = async (data: any) => {
     const { error } = await supabase
       .from("inventory")
       .update({
-        item_name: updatedData.item_name,
-        category: updatedData.category,
-        current_stock: Number(updatedData.current_stock),
-        min_stock: Number(updatedData.min_stock),
-        unit: updatedData.unit,
-        supplier: updatedData.supplier,
+        item_name: data.item_name,
+        category: data.category,
+        current_stock: Number(data.current_stock),
+        min_stock: Number(data.min_stock),
+        unit: data.unit,
+        supplier: data.supplier,
       })
       .eq("id", editItem.id);
 
@@ -72,96 +69,87 @@ export default function Inventory() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex flex-col md:flex-row w-full">
         <AppSidebar />
         <main className="flex-1 flex flex-col">
           <PageHeader>
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <div>
-                <h1 className="text-2xl font-bold">Inventory</h1>
-                <p className="text-muted-foreground">Track and manage stock levels</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger />
+                <div>
+                  <h1 className="text-2xl font-bold">Inventory</h1>
+                  <p className="text-muted-foreground text-sm">
+                    Track and manage stock levels
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setIsAddOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Item
-              </Button>
-              <Button variant="secondary" onClick={() => setIsKitchenOpen(true)}>
-                🍳 Kitchen Orders
-              </Button>
+
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={() => setIsAddOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" /> Add Item
+                </Button>
+                <Button variant="secondary" onClick={() => setIsKitchenOpen(true)}>
+                  🍳 Kitchen Orders
+                </Button>
+              </div>
             </div>
           </PageHeader>
 
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-4 md:p-6">
             {loading ? (
               <p>Loading...</p>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {inventory.map((item) => {
                   const stockStatus = getStockStatus(item.current_stock, item.min_stock);
                   return (
-                    <Card key={item.id}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Card key={item.id} className="flex flex-col justify-between">
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div className="flex items-center gap-3">
                           <Package className="w-8 h-8 text-muted-foreground" />
                           <div>
-                            <CardTitle className="text-lg font-medium">{item.item_name}</CardTitle>
+                            <CardTitle className="text-lg font-medium">
+                              {item.item_name}
+                            </CardTitle>
                             <p className="text-sm text-muted-foreground">{item.category}</p>
                           </div>
                         </div>
                         <Badge className={stockStatus.color}>{stockStatus.status}</Badge>
                       </CardHeader>
+
                       <CardContent>
-                        <div className="grid md:grid-cols-4 gap-4">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Current Stock</p>
-                            <p className="text-lg font-semibold">
-                              {item.current_stock} {item.unit}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Minimum Stock</p>
-                            <p className="text-sm">{item.min_stock} {item.unit}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Supplier</p>
-                            <p className="text-sm">{item.supplier}</p>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditItem(item);
-                                setIsEditOpen(true);
-                              }}
-                            >
-                              <Pencil className="w-4 h-4 mr-1" /> Edit
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" /> Delete
-                            </Button>
-
-                            {/* {item.current_stock < item.min_stock && (
-                              <Button
-                                size="sm"
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                                onClick={() => alert(`Need to reorder ${item.item_name}`)}
-                              >
-                                <AlertTriangle className="w-4 h-4 mr-1" /> Order Now
-                              </Button>
-                            )} */}
-                          </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <p>
+                            <strong>Current:</strong> {item.current_stock} {item.unit}
+                          </p>
+                          <p>
+                            <strong>Min:</strong> {item.min_stock} {item.unit}
+                          </p>
+                          <p>
+                            <strong>Supplier:</strong> {item.supplier}
+                          </p>
                         </div>
 
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditItem(item);
+                              setIsEditOpen(true);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4 mr-1" /> Edit
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" /> Delete
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   );
@@ -172,7 +160,7 @@ export default function Inventory() {
         </main>
       </div>
 
-      {/* Add form */}
+      {/* Add Form */}
       <AddInventoryForm
         isOpen={isAddOpen}
         onCancel={() => setIsAddOpen(false)}
@@ -182,28 +170,19 @@ export default function Inventory() {
         }}
       />
 
-      {/* Edit form */}
-      <UpdateDataForm
+      {/* Edit Form */}
+      <AddInventoryForm
         isOpen={isEditOpen}
         onCancel={() => setIsEditOpen(false)}
-        onSave={handleEdit}
+        onSave={handleEditSave}
         initialData={editItem}
-        fields={[
-          { id: 1, label: "Item Name", name: "item_name", type: "text", isRequired: true },
-          { id: 2, label: "Category", name: "category", type: "text" },
-          { id: 3, label: "Current Stock", name: "current_stock", type: "number" },
-          { id: 4, label: "Min Stock", name: "min_stock", type: "number" },
-          { id: 5, label: "Unit", name: "unit", type: "text" },
-          { id: 6, label: "Supplier", name: "supplier", type: "text" },
-        ]}
       />
+
       <KitchenOrdersModal
         isOpen={isKitchenOpen}
         onClose={() => setIsKitchenOpen(false)}
         inventory={inventory}
       />
-
     </SidebarProvider>
-
   );
 }
