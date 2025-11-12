@@ -34,7 +34,9 @@ export interface MenuItemModified {
 
 export default function MenuItems() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [activeMenuItem, setActiveMenuItem] = useState<MenuItemModified | null>(null);
+  const [activeMenuItem, setActiveMenuItem] = useState<MenuItemModified | null>(
+    null
+  );
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
@@ -43,7 +45,8 @@ export default function MenuItems() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("menu_items")
-        .select(`
+        .select(
+          `
     *,
     menu_categories(name),
     menu_item_ingredients (
@@ -51,29 +54,32 @@ export default function MenuItems() {
       quantity,
       inventory:inventory_id (item_name, unit)
     )
-  `)
+  `
+        )
         .order("name");
 
       if (error) throw error;
 
       // normalize ingredients
-      return (data || []).map((item: any): MenuItemModified => ({
-        id: String(item.id),
-        name: item.name,
-        price: item.price,
-        description: item.description,
-        is_available: item.is_available,
-        prep_time: item.prep_time,
-        calories: item.calories,
-        menu_categories: item.menu_categories ?? null,
-        ingredients: item.menu_item_ingredients?.map((ing: any) => ({
-          inventory_id: ing.inventory_id,
-          quantity: ing.quantity,
-          unit: ing.inventory?.unit,
-          item_name: ing.inventory?.item_name,
-        })) ?? [],
-      }));
-
+      return (data || []).map(
+        (item: any): MenuItemModified => ({
+          id: String(item.id),
+          name: item.name,
+          price: item.price,
+          description: item.description,
+          is_available: item.is_available,
+          prep_time: item.prep_time,
+          calories: item.calories,
+          menu_categories: item.menu_categories ?? null,
+          ingredients:
+            item.menu_item_ingredients?.map((ing: any) => ({
+              inventory_id: ing.inventory_id,
+              quantity: ing.quantity,
+              unit: ing.inventory?.unit,
+              item_name: ing.inventory?.item_name,
+            })) ?? [],
+        })
+      );
     },
   });
 
@@ -89,7 +95,8 @@ export default function MenuItems() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this menu item?")) return;
+    if (!window.confirm("Are you sure you want to delete this menu item?"))
+      return;
 
     const { error } = await supabase.from("menu_items").delete().eq("id", id);
 
@@ -108,7 +115,9 @@ export default function MenuItems() {
               <SidebarTrigger />
               <div>
                 <h1 className="text-2xl font-bold">Menu Items</h1>
-                <p className="text-muted-foreground">Manage your restaurant's menu items</p>
+                <p className="text-muted-foreground">
+                  Manage your restaurant's menu items
+                </p>
               </div>
             </div>
             {isAdmin && (
@@ -128,8 +137,8 @@ export default function MenuItems() {
             />
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {isLoading
-                ? Array.from({ length: 6 }).map((_, i) => (
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
                   <Card key={i}>
                     <CardHeader>
                       <Skeleton className="h-4 w-3/4" />
@@ -141,75 +150,109 @@ export default function MenuItems() {
                     </CardContent>
                   </Card>
                 ))
-                : menuItems?.length === 0
-                  ? (
-                    <div className="col-span-full text-center py-8">
-                      <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No menu items yet</h3>
-                      <p className="text-muted-foreground mb-4">Start by adding your first menu item</p>
-                      {isAdmin && (
-                        <Button onClick={() => setModalOpen(true)}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add First Item
-                        </Button>
-                      )}
-                    </div>
-                  )
-                  : menuItems.map(item => (
-                    <Card key={item.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg font-medium line-clamp-1">{item.name}</CardTitle>
-                          <div className="flex items-center gap-2 mt-1">
-                            {item.menu_categories && <Badge variant="outline" className="text-xs">{item.menu_categories.name}</Badge>}
-                            <Badge variant={item.is_available ? "default" : "secondary"} className="text-xs">
-                              {item.is_available ? "Available" : "Out of Stock"}
+              ) : menuItems?.length === 0 ? (
+                <div className="col-span-full text-center py-8">
+                  <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    No menu items yet
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Start by adding your first menu item
+                  </p>
+                  {isAdmin && (
+                    <Button onClick={() => setModalOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add First Item
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                menuItems.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-medium line-clamp-1">
+                          {item.name}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-1">
+                          {item.menu_categories && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.menu_categories.name}
                             </Badge>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {item.description && <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>}
-
-                        <div className="flex flex-col gap-1">
-                          {item.ingredients?.map(ing => (
-                            <span key={ing.inventory_id} className="text-sm text-muted-foreground">
-                              {ing.item_name} - {ing.quantity} {ing.unit}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="w-4 h-4 text-green-600" />
-                            <span className="text-lg font-semibold text-green-600">{item.price.toFixed(2)}</span>
-                          </div>
-
-                          {isAdmin && (
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDelete(item.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
                           )}
+                          <Badge
+                            variant={
+                              item.is_available ? "default" : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {item.is_available ? "Available" : "Out of Stock"}
+                          </Badge>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))
-              }
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+
+                      <div className="flex flex-col gap-1">
+                        {item.ingredients?.map((ing, idx) => (
+                          <span
+                            key={ing.inventory_id ?? `ingredient-${idx}`}
+                            className="text-sm text-muted-foreground"
+                          >
+                            {ing.item_name ?? "Unnamed"} - {ing.quantity ?? "?"}{" "}
+                            {ing.unit ?? ""}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4 text-green-600" />
+                          <span className="text-lg font-semibold text-green-600">
+                            {item.price.toFixed(2)}
+                          </span>
+                        </div>
+
+                        {isAdmin && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </main>
       </div>
 
-      <AIChatbot section="menu" context="Menu items management page with ingredients, price and availability" />
+      <AIChatbot
+        section="menu"
+        context="Menu items management page with ingredients, price and availability"
+      />
     </SidebarProvider>
   );
 }

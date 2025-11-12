@@ -124,7 +124,6 @@ export default function AddMenuItemForm({
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    console.log("handleSubmit triggered");
 
     const isEdit = !!initialData?.id;
     let menuItemId = initialData?.id;
@@ -148,7 +147,6 @@ export default function AddMenuItemForm({
 
         if (error) throw error;
 
-        console.log("🧹 Deleting old ingredients...");
         await supabase
           .from("menu_item_ingredients")
           .delete()
@@ -175,32 +173,21 @@ export default function AddMenuItemForm({
         menuItemId = data.id;
       }
 
-      console.log("menuItemId after insert/update:", menuItemId);
-
-
-
       // ✅ Insert ingredients
       if (formData.ingredients.length > 0 && menuItemId) {
         const insertData = formData.ingredients
-          .filter((i) => i.inventory_id && i.quantity)
-          .map((i) => ({
-            menu_item_id: menuItemId,
-            inventory_id: i.inventory_id ? Number(i.inventory_id) : null,
-
-            quantity: Number(i.quantity),
-          }));
-
-        console.log("🟢 Final insertData:", insertData);
-        console.log("🔹 menu_item_id typeof:", typeof insertData[0]?.menu_item_id);
-        console.log("🔹 inventory_id typeof:", typeof insertData[0]?.inventory_id);
+  .filter((i) => i.inventory_id && i.quantity)
+  .map((i) => ({
+    menu_item_id: menuItemId,
+    inventory_id: i.inventory_id,
+    quantity: Number(i.quantity),
+  }));
 
         await supabase.from("menu_item_ingredients").insert(insertData);
       }
 
-      console.log("✅ Done — calling onSave()");
       onSave();
     } catch (err) {
-      console.error("❌ Error in handleSubmit:", err);
       alert("Error saving menu item");
     }
   };
@@ -208,10 +195,13 @@ export default function AddMenuItemForm({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4"
-      onClick={onCancel}
-    >
+   <div
+  className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) onCancel();
+  }}
+>
+
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
@@ -303,24 +293,26 @@ export default function AddMenuItemForm({
             {formData.ingredients.map((ing, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <Select
-                  value={ing.inventory_id ? String(ing.inventory_id) : ""}
-                  onValueChange={(val) =>
-                    handleIngredientChange(idx, "inventory_id", val ? Number(val) : "")
-                  }
+  value={ing.inventory_id}
+  onValueChange={(val) => handleIngredientChange(idx, "inventory_id", val)}
+>
+  <SelectTrigger className="w-[200px]">
+    <SelectValue placeholder="Select ingredient" />
+  </SelectTrigger>
+ <SelectContent className="z-[9999]">
+  {inventoryItems.map((inv, idx) => (
+    <SelectItem
+  key={inv.id}
+  value={inv.id}
+>
+  {inv.item_name || "Unnamed"} ({inv.unit || "unit"})
+</SelectItem>
 
-                >
+  ))}
+</SelectContent>
 
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select ingredient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {inventoryItems.map((inv) => (
-                      <SelectItem key={inv.id} value={String(inv.id)}>
-                        {inv.item_name} ({inv.unit})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+</Select>
+
 
                 <Input
                   type="number"

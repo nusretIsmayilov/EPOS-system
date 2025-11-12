@@ -9,27 +9,24 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { updateInventoryAfterOrder } from "@/utils/updateInventoryAfterOrder"; // ✅ EKLENDİ
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const projectRef = import.meta.env.VITE_PROJECT_REF;
 
 export default function POS() {
-
   const [cart, setCart] = useState<Array<{ id: string, name: string, price: number, quantity: number }>>([]);
   const queryClient = useQueryClient();
+
   const { data: menuItems, isLoading } = useQuery({
     queryKey: ["menu-items"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("menu_items")
-        .select(
-          `
-      *,
-      menu_categories (
-        name
-      )
-    `
-        )
+        .select(`
+          *,
+          menu_categories ( name )
+        `)
         .eq("is_available", true)
         .order("name");
 
@@ -41,13 +38,11 @@ export default function POS() {
   const addToCart = (item: (typeof menuItems)[0]) => {
     const existingItem = cart.find((cartItem) => cartItem.id === item.id);
     if (existingItem) {
-      setCart(
-        cart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        )
-      );
+      setCart(cart.map((cartItem) =>
+        cartItem.id === item.id
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      ));
     } else {
       setCart([...cart, { ...item, quantity: 1 }]);
     }
@@ -92,7 +87,6 @@ export default function POS() {
     const cancel_url = `${window.location.origin}/pos`;
 
     try {
-      // Kullanıcı bilgisi (müşteri ID’si)
       const {
         data: { user },
         error: userError,
@@ -103,7 +97,6 @@ export default function POS() {
         return;
       }
 
-      // Stripe checkout oluştur
       const res = await fetch(
         `https://${projectRef}.functions.supabase.co/create-checkout-session`,
         {
@@ -124,26 +117,29 @@ export default function POS() {
 
       const data = await res.json();
 
-      // Eğer Stripe URL döndüyse
       if (data.url) {
         // 🔹 Siparişi Supabase'e kaydet
         const orderData: any = {
-          user_id: user?.id || null, // 🔥 müşteri bağlantısı burada değişti
+          user_id: user?.id || null,
           items: cart.map((item) => item.id),
           total: total,
-          status: "Pending",
+          status: "Paid", // ✅ artık ödeme tamamlandı sayılıyor
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           table: "POS Terminal",
         };
 
-        const { error: orderError } = await supabase
+        const { data: orderResult, error: orderError } = await supabase
           .from("orders")
-          .insert([orderData]);
+          .insert([orderData])
+          .select();
 
         if (orderError) {
           console.error("Order insert error:", orderError);
         } else {
-          console.log("Order created successfully!");
+          console.log("✅ Order created successfully!");
+
+          // 🔥 Stokları güncelle
+          await updateInventoryAfterOrder(cart);
         }
 
         // Stripe yönlendirmesi
@@ -157,7 +153,6 @@ export default function POS() {
       console.error("Error creating checkout session:", err);
     }
   };
-
 
   return (
     <SidebarProvider>
@@ -246,45 +241,21 @@ export default function POS() {
                       <>
                         <div className="space-y-3">
                           {cart.map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between gap-2"
-                            >
-
+                            <div key={item.id} className="flex items-center justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate max-w-[120px] md:max-w-[160px] lg:max-w-[200px]">
-                                  {item.name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  ${item.price}
-                                </p>
+                                <p className="font-medium truncate">{item.name}</p>
+                                <p className="text-sm text-muted-foreground">${item.price}</p>
                               </div>
-
                               <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateQuantity(item.id, -1)}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => updateQuantity(item.id, -1)}>
                                   <Minus className="w-3 h-3" />
                                 </Button>
-                                <span className="w-8 text-center">
-                                  {item.quantity}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updateQuantity(item.id, 1)}
-                                >
+                                <span className="w-8 text-center">{item.quantity}</span>
+                                <Button size="sm" variant="outline" onClick={() => updateQuantity(item.id, 1)}>
                                   <Plus className="w-3 h-3" />
                                 </Button>
                               </div>
-
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => removeFromCart(item.id)}
-                              >
+                              <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)}>
                                 <Trash className="w-3 h-3" />
                               </Button>
                             </div>
@@ -298,11 +269,7 @@ export default function POS() {
                           </div>
                         </div>
 
-                        <Button
-                          className="w-full"
-                          size="lg"
-                          onClick={handleCheckout}
-                        >
+                        <Button className="w-full" size="lg" onClick={handleCheckout}>
                           <CreditCard className="w-4 h-4 mr-2" />
                           Process Payment
                         </Button>
