@@ -4,9 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Loader2 } from "lucide-react";
 
 export default function PaymentSuccess() {
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading"
-  );
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,22 +19,33 @@ export default function PaymentSuccess() {
 
       const sessionData = JSON.parse(sessionDataString);
 
-      const items = sessionData.map(data => data.id);
-      const total_amount = sessionData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const items = sessionData.map((data: any) => data.id);
+      const total_amount = sessionData.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
 
       try {
-        const { data, error } = await supabase
-          .from("orders")
-          .insert([
-            {
-              total: total_amount as string,
-              status: "preparing",
-              items: items,
-            },
-          ])
-          .select();
+        // Kullanıcı bilgilerini al
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+if (userError) throw userError;
+
+const customerName = (user?.user_metadata as any)?.full_name || "Guest";
+
+const { data, error } = await supabase
+  .from("orders")
+  .insert([
+    {
+      total: total_amount,
+      status: "preparing",
+      items: items,
+      user_id: user?.id || null,
+      customer_name: customerName
+    },
+  ])
+  .select();
+
+
 
         if (error) throw error;
+
         setStatus("success");
         localStorage.removeItem("stripe_checkout_session");
 

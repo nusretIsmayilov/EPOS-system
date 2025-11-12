@@ -9,7 +9,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { updateInventoryAfterOrder } from "@/utils/updateInventoryAfterOrder"; // ✅ EKLENDİ
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const projectRef = import.meta.env.VITE_PROJECT_REF;
@@ -23,10 +22,7 @@ export default function POS() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("menu_items")
-        .select(`
-          *,
-          menu_categories ( name )
-        `)
+        .select(`*, menu_categories ( name )`)
         .eq("is_available", true)
         .order("name");
 
@@ -80,79 +76,44 @@ export default function POS() {
   };
 
   const handleCheckout = async () => {
-    if (cart.length === 0) return;
+  if (cart.length === 0) return;
 
-    const items = prepareStripeItems();
-    const success_url = `${window.location.origin}/payment-success`;
-    const cancel_url = `${window.location.origin}/pos`;
+  const items = prepareStripeItems();
+  const success_url = `${window.location.origin}/payment-success`;
+  const cancel_url = `${window.location.origin}/pos`;
 
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        console.error("Auth error:", userError);
-        return;
+  try {
+    const res = await fetch(
+      `https://${projectRef}.functions.supabase.co/create-checkout-session`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          items: cart,
+          success_url,
+          cancel_url,
+          total_amount: total,
+        }),
       }
+    );
 
-      const res = await fetch(
-        `https://${projectRef}.functions.supabase.co/create-checkout-session`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify({
-            items: cart,
-            success_url,
-            cancel_url,
-            cart_items: cart,
-            total_amount: total,
-          }),
-        }
-      );
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (data.url) {
-        // 🔹 Siparişi Supabase'e kaydet
-        const orderData: any = {
-          user_id: user?.id || null,
-          items: cart.map((item) => item.id),
-          total: total,
-          status: "Paid", // ✅ artık ödeme tamamlandı sayılıyor
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          table: "POS Terminal",
-        };
-
-        const { data: orderResult, error: orderError } = await supabase
-          .from("orders")
-          .insert([orderData])
-          .select();
-
-        if (orderError) {
-          console.error("Order insert error:", orderError);
-        } else {
-          console.log("✅ Order created successfully!");
-
-          // 🔥 Stokları güncelle
-          await updateInventoryAfterOrder(cart);
-        }
-
-        // Stripe yönlendirmesi
-        localStorage.setItem("stripe_checkout_session", JSON.stringify(cart));
-        window.location.href = data.url;
-        setCart([]);
-      } else {
-        console.error("Checkout URL not returned");
-      }
-    } catch (err) {
-      console.error("Error creating checkout session:", err);
+    if (data.url) {
+      localStorage.setItem("stripe_checkout_session", JSON.stringify(cart));
+      window.location.href = data.url;
+      setCart([]);
+    } else {
+      console.error("Checkout URL not returned");
     }
-  };
+  } catch (err) {
+    console.error("Error creating checkout session:", err);
+  }
+};
+
 
   return (
     <SidebarProvider>
@@ -197,21 +158,15 @@ export default function POS() {
                       >
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg">
-                              {item.name}
-                            </CardTitle>
+                            <CardTitle className="text-lg">{item.name}</CardTitle>
                             {item?.menu_categories?.name && (
-                              <Badge variant="secondary">
-                                {item?.menu_categories?.name}
-                              </Badge>
+                              <Badge variant="secondary">{item?.menu_categories?.name}</Badge>
                             )}
                           </div>
                         </CardHeader>
                         <CardContent>
                           <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold">
-                              ${item.price}
-                            </span>
+                            <span className="text-xl font-bold">${item.price}</span>
                             <Button size="sm">
                               <Plus className="w-4 h-4" />
                             </Button>

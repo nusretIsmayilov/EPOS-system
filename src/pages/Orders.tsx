@@ -73,7 +73,7 @@ export default function Orders() {
       const { error } = await supabase
         .from("orders")
         .update({
-          customer: data.customer,
+          customer_name: data.customer,
           table: data.table,
           items: itemIds,
           total: data.total,
@@ -94,7 +94,7 @@ export default function Orders() {
       const { error } = await supabase.from("orders").insert([
         {
           // order_id: orderId, new order edende "order id" erroru verir !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          customer: data.customer,
+          customer_name: data.customer,
           table: data.table,
           items: itemIds,
           total: data.total,
@@ -184,7 +184,7 @@ export default function Orders() {
                           {order.order_id || formatOrderId(index)}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {order.profiles?.full_name || "Unknown Customer"} • {order.table}
+                          {order.customer_name || "Unknown Customer"} • {order.table}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

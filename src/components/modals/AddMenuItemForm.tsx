@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 
 type IngredientInput = {
-  inventory_id: string; // string olarak saklıyoruz
+  inventory_id: string;
   quantity: string;
   unit?: string;
 };
@@ -24,6 +24,7 @@ type MenuItemFormData = {
   is_available: boolean | string;
   prep_time?: string;
   calories?: string;
+  category_id?: string;
   ingredients: IngredientInput[];
 };
 
@@ -40,21 +41,32 @@ export default function AddMenuItemForm({
     is_available: true,
     prep_time: "",
     calories: "",
+    category_id: "",
     ingredients: [],
   });
+
   const [inventoryItems, setInventoryItems] = useState<
     { id: number; item_name: string; unit: string }[]
   >([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
     const fetchInventory = async () => {
       const { data, error } = await supabase
         .from("inventory")
         .select("id, item_name, unit");
-      if (error) console.error(error);
-      else setInventoryItems(data || []);
+      if (!error && data) setInventoryItems(data);
     };
+
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from("item_categories")
+        .select("id, name");
+      if (!error && data) setCategories(data);
+    };
+
     fetchInventory();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -66,6 +78,7 @@ export default function AddMenuItemForm({
         is_available: initialData.is_available ?? true,
         prep_time: String(initialData.prep_time || ""),
         calories: String(initialData.calories || ""),
+        category_id: initialData.category_id ? String(initialData.category_id) : "",
         ingredients:
           initialData.ingredients?.map((ing: any) => ({
             inventory_id: String(ing.inventory_id),
@@ -81,6 +94,7 @@ export default function AddMenuItemForm({
         is_available: true,
         prep_time: "",
         calories: "",
+        category_id: "",
         ingredients: [],
       });
     }
@@ -89,10 +103,7 @@ export default function AddMenuItemForm({
   const handleAddIngredient = () => {
     setFormData((prev) => ({
       ...prev,
-      ingredients: [
-        ...prev.ingredients,
-        { inventory_id: "", quantity: "", unit: "" },
-      ],
+      ingredients: [...prev.ingredients, { inventory_id: "", quantity: "", unit: "" }],
     }));
   };
 
@@ -114,7 +125,6 @@ export default function AddMenuItemForm({
     });
   };
 
-
   const handleRemoveIngredient = (index: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -124,13 +134,10 @@ export default function AddMenuItemForm({
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-
     const isEdit = !!initialData?.id;
     let menuItemId = initialData?.id;
 
     try {
-      console.log("isEdit:", isEdit, "menuItemId:", menuItemId);
-
       if (isEdit) {
         const { error } = await supabase
           .from("menu_items")
@@ -142,15 +149,13 @@ export default function AddMenuItemForm({
               formData.is_available === "true" || formData.is_available === true,
             prep_time: formData.prep_time ? Number(formData.prep_time) : null,
             calories: formData.calories ? Number(formData.calories) : null,
+            category_id: formData.category_id ? Number(formData.category_id) : null,
           })
           .eq("id", menuItemId);
 
         if (error) throw error;
 
-        await supabase
-          .from("menu_item_ingredients")
-          .delete()
-          .eq("menu_item_id", menuItemId);
+        await supabase.from("menu_item_ingredients").delete().eq("menu_item_id", menuItemId);
       } else {
         const { data, error } = await supabase
           .from("menu_items")
@@ -160,10 +165,10 @@ export default function AddMenuItemForm({
               price: Number(formData.price),
               description: formData.description,
               is_available:
-                formData.is_available === "true" ||
-                formData.is_available === true,
+                formData.is_available === "true" || formData.is_available === true,
               prep_time: formData.prep_time ? Number(formData.prep_time) : null,
               calories: formData.calories ? Number(formData.calories) : null,
+              category_id: formData.category_id ? Number(formData.category_id) : null,
             },
           ])
           .select("id")
@@ -173,16 +178,14 @@ export default function AddMenuItemForm({
         menuItemId = data.id;
       }
 
-      // ✅ Insert ingredients
       if (formData.ingredients.length > 0 && menuItemId) {
         const insertData = formData.ingredients
-  .filter((i) => i.inventory_id && i.quantity)
-  .map((i) => ({
-    menu_item_id: menuItemId,
-    inventory_id: i.inventory_id,
-    quantity: Number(i.quantity),
-  }));
-
+          .filter((i) => i.inventory_id && i.quantity)
+          .map((i) => ({
+            menu_item_id: menuItemId,
+            inventory_id: i.inventory_id,
+            quantity: Number(i.quantity),
+          }));
         await supabase.from("menu_item_ingredients").insert(insertData);
       }
 
@@ -195,13 +198,12 @@ export default function AddMenuItemForm({
   if (!isOpen) return null;
 
   return (
-   <div
-  className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4"
-  onMouseDown={(e) => {
-    if (e.target === e.currentTarget) onCancel();
-  }}
->
-
+    <div
+      className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
@@ -216,9 +218,7 @@ export default function AddMenuItemForm({
             <Label>Name</Label>
             <Input
               value={formData.name}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, name: e.target.value }))
-              }
+              onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
             />
           </div>
           <div>
@@ -226,9 +226,7 @@ export default function AddMenuItemForm({
             <Input
               type="number"
               value={formData.price}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, price: e.target.value }))
-              }
+              onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))}
             />
           </div>
           <div>
@@ -236,9 +234,7 @@ export default function AddMenuItemForm({
             <Input
               type="number"
               value={formData.prep_time}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, prep_time: e.target.value }))
-              }
+              onChange={(e) => setFormData((p) => ({ ...p, prep_time: e.target.value }))}
             />
           </div>
           <div>
@@ -246,9 +242,7 @@ export default function AddMenuItemForm({
             <Input
               type="number"
               value={formData.calories}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, calories: e.target.value }))
-              }
+              onChange={(e) => setFormData((p) => ({ ...p, calories: e.target.value }))}
             />
           </div>
         </div>
@@ -267,16 +261,33 @@ export default function AddMenuItemForm({
           <Label>Availability</Label>
           <Select
             value={String(formData.is_available)}
-            onValueChange={(v) =>
-              setFormData((p) => ({ ...p, is_available: v }))
-            }
+            onValueChange={(v) => setFormData((p) => ({ ...p, is_available: v }))}
           >
-            <SelectTrigger>
-              <SelectValue />
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select availability" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white text-black dark:bg-gray-800 dark:text-white border border-gray-200 shadow-lg rounded-lg z-[9999]">
               <SelectItem value="true">Available</SelectItem>
               <SelectItem value="false">Out of Stock</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Category (from item_categories)</Label>
+          <Select
+            value={formData.category_id}
+            onValueChange={(v) => setFormData((p) => ({ ...p, category_id: v }))}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent className="bg-white text-black dark:bg-gray-800 dark:text-white border border-gray-200 shadow-lg rounded-lg z-[9999]">
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={String(cat.id)}>
+                  {cat.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -293,27 +304,22 @@ export default function AddMenuItemForm({
             {formData.ingredients.map((ing, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <Select
-  value={ing.inventory_id}
-  onValueChange={(val) => handleIngredientChange(idx, "inventory_id", val)}
->
-  <SelectTrigger className="w-[200px]">
-    <SelectValue placeholder="Select ingredient" />
-  </SelectTrigger>
- <SelectContent className="z-[9999]">
-  {inventoryItems.map((inv, idx) => (
-    <SelectItem
-  key={inv.id}
-  value={inv.id}
->
-  {inv.item_name || "Unnamed"} ({inv.unit || "unit"})
-</SelectItem>
-
-  ))}
-</SelectContent>
-
-</Select>
-
-
+                  value={ing.inventory_id}
+                  onValueChange={(val) =>
+                    handleIngredientChange(idx, "inventory_id", val)
+                  }
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select ingredient" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white text-black dark:bg-gray-800 dark:text-white border border-gray-200 shadow-lg rounded-lg z-[9999]">
+                    {inventoryItems.map((inv) => (
+                      <SelectItem key={inv.id} value={String(inv.id)}>
+                        {inv.item_name} ({inv.unit})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   type="number"
                   placeholder="Qty"
@@ -323,9 +329,7 @@ export default function AddMenuItemForm({
                     handleIngredientChange(idx, "quantity", e.target.value)
                   }
                 />
-
                 <span className="text-sm text-gray-600">{ing.unit}</span>
-
                 <Button
                   type="button"
                   variant="destructive"
