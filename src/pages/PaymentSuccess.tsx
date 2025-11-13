@@ -3,6 +3,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Loader2 } from "lucide-react";
 
+interface SessionItem {
+  id: string;
+  price: number;
+  quantity: number;
+}
+
 export default function PaymentSuccess() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const location = useLocation();
@@ -17,32 +23,30 @@ export default function PaymentSuccess() {
         return;
       }
 
-      const sessionData = JSON.parse(sessionDataString);
+      const sessionData: SessionItem[] = JSON.parse(sessionDataString);
 
-      const items = sessionData.map((data: any) => data.id);
-      const total_amount = sessionData.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+      const items = sessionData.map(item => item.id);
+      const total_amount = sessionData.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
       try {
-        // Kullanıcı bilgilerini al
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-if (userError) throw userError;
+        if (userError) throw userError;
 
-const customerName = (user?.user_metadata as any)?.full_name || "Guest";
+        const customerName = (user?.user_metadata as any)?.full_name || "Guest";
 
-const { data, error } = await supabase
-  .from("orders")
-  .insert([
-    {
-      total: total_amount,
-      status: "preparing",
-      items: items,
-      user_id: user?.id || null,
-      customer_name: customerName
-    },
-  ])
-  .select();
-
-
+        const { data, error } = await supabase
+          .from("orders")
+          .insert([
+            {
+               order_number: `ORD-${Date.now()}`,
+              total: total_amount,
+              status: "preparing",
+              items: items,
+              user_id: user?.id || null,
+              customer_name: customerName
+            },
+          ])
+          .select();
 
         if (error) throw error;
 
@@ -50,8 +54,8 @@ const { data, error } = await supabase
         localStorage.removeItem("stripe_checkout_session");
 
         setTimeout(() => navigate("/pos"), 3000);
-      } catch (error) {
-        console.error("Error creating order:", error);
+      } catch (err) {
+        console.error("Error creating order:", err);
         setStatus("error");
       }
     };

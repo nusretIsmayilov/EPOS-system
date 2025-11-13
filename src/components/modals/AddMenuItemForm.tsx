@@ -149,13 +149,17 @@ export default function AddMenuItemForm({
               formData.is_available === "true" || formData.is_available === true,
             prep_time: formData.prep_time ? Number(formData.prep_time) : null,
             calories: formData.calories ? Number(formData.calories) : null,
-            category_id: formData.category_id ? Number(formData.category_id) : null,
+            category_id: formData.category_id || null, // string olarak
           })
           .eq("id", menuItemId);
 
+
         if (error) throw error;
 
-        await supabase.from("menu_item_ingredients").delete().eq("menu_item_id", menuItemId);
+        await supabase
+          .from("menu_item_ingredients")
+          .delete()
+          .eq("menu_item_id", menuItemId as string);
       } else {
         const { data, error } = await supabase
           .from("menu_items")
@@ -168,11 +172,12 @@ export default function AddMenuItemForm({
                 formData.is_available === "true" || formData.is_available === true,
               prep_time: formData.prep_time ? Number(formData.prep_time) : null,
               calories: formData.calories ? Number(formData.calories) : null,
-              category_id: formData.category_id ? Number(formData.category_id) : null,
+              category_id: formData.category_id ? Number(formData.category_id) : null
             },
           ])
           .select("id")
           .single();
+
 
         if (error) throw error;
         menuItemId = data.id;

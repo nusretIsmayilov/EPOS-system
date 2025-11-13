@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MessageCircle, 
-  Send, 
-  X, 
-  Bot, 
-  User, 
+import {
+  MessageCircle,
+  Send,
+  X,
+  Bot,
+  User,
   Sparkles,
   Minimize2,
   Maximize2
@@ -64,7 +64,7 @@ export function AIChatbot({ section = 'general', context = '' }: AIChatbotProps)
       };
 
       const welcomeMessage = welcomeMessages[section as keyof typeof welcomeMessages] || welcomeMessages.general;
-      
+
       setMessages([{
         id: '1',
         content: welcomeMessage,
@@ -80,46 +80,45 @@ export function AIChatbot({ section = 'general', context = '' }: AIChatbotProps)
     const userMessage: Message = {
       id: Date.now().toString(),
       content: input.trim(),
-      role: 'user',
+      role: "user",
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setInput("");
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
+      const response = await fetch("http://localhost:3000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           message: userMessage.content,
-          context: context,
-          section: section
-        }
+          context,
+          section,
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.response,
-        role: 'assistant',
-        timestamp: new Date()
+        role: "assistant",
+        timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Error sending message:", error);
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I'm experiencing technical difficulties. Please try again later.",
-        role: 'assistant',
-        timestamp: new Date()
+        content: "I'm having trouble responding right now.",
+        role: "assistant",
+        timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, errorMessage]);
@@ -127,6 +126,7 @@ export function AIChatbot({ section = 'general', context = '' }: AIChatbotProps)
       setIsLoading(false);
     }
   };
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -167,11 +167,10 @@ export function AIChatbot({ section = 'general', context = '' }: AIChatbotProps)
   }
 
   return (
-    <div className={`fixed z-50 transition-all duration-300 animate-scale-in ${
-      isMobile 
-        ? `bottom-4 left-4 right-4 ${isMinimized ? 'h-12' : 'h-80'}`
-        : `bottom-6 right-6 ${isMinimized ? 'w-80 h-12' : 'w-96 h-[500px]'}`
-    }`}>
+    <div className={`fixed z-50 transition-all duration-300 animate-scale-in ${isMobile
+      ? `bottom-4 left-4 right-4 ${isMinimized ? 'h-12' : 'h-80'}`
+      : `bottom-6 right-6 ${isMinimized ? 'w-80 h-12' : 'w-96 h-[500px]'}`
+      }`}>
       <Card className="w-full h-full shadow-2xl border-2 flex flex-col">
         <CardHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
@@ -218,29 +217,25 @@ export function AIChatbot({ section = 'general', context = '' }: AIChatbotProps)
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex gap-3 animate-fade-in ${
-                      message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                    }`}
+                    className={`flex gap-3 animate-fade-in ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                      }`}
                   >
-                    <div className={`p-2 rounded-full ${
-                      message.role === 'user' 
-                        ? 'bg-primary' 
-                        : getSectionColor(section)
-                    }`}>
+                    <div className={`p-2 rounded-full ${message.role === 'user'
+                      ? 'bg-primary'
+                      : getSectionColor(section)
+                      }`}>
                       {message.role === 'user' ? (
                         <User className="w-4 h-4 text-white" />
                       ) : (
                         <Bot className="w-4 h-4 text-white" />
                       )}
                     </div>
-                    <div className={`max-w-[70%] ${
-                      message.role === 'user' ? 'text-right' : 'text-left'
-                    }`}>
-                      <div className={`p-3 rounded-lg ${
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                    <div className={`max-w-[70%] ${message.role === 'user' ? 'text-right' : 'text-left'
                       }`}>
+                      <div className={`p-3 rounded-lg ${message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                        }`}>
                         <p className="text-sm leading-relaxed">{message.content}</p>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
