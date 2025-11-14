@@ -11,6 +11,10 @@ import { Save, Bell, Shield, Palette, Globe } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export default function Settings() {
+  const { theme, setTheme } = useTheme();
+  const toggleDark = (checked: boolean) => {
+    setTheme(checked ? "dark" : "light");
+  };
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -138,7 +142,11 @@ export default function Settings() {
                     <Label htmlFor="dark-mode">Dark Mode</Label>
                     <p className="text-sm text-muted-foreground">Switch to dark theme</p>
                   </div>
-                  <Switch id="dark-mode" />
+                  <Switch
+                    id="dark-mode"
+                    checked={theme === "dark"}
+                    onCheckedChange={toggleDark}
+                  />
                 </div>
                 <Separator />
                 <div className="space-y-2">
@@ -154,6 +162,11 @@ export default function Settings() {
           </div>
         </main>
       </div>
+      <Switch
+        id="dark-mode"
+        checked={theme === "dark"}
+        onCheckedChange={(value) => setTheme(value ? "dark" : "light")}
+      />
     </SidebarProvider>
   );
 }

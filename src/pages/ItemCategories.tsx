@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
 import { createClient } from "@supabase/supabase-js";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 const supabaseUrl = "https://vhvjfndzluxlmlnrkagj.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodmpmbmR6bHV4bG1sbnJrYWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMjc3NywiZXhwIjoyMDczNjc4Nzc3fQ.nv8Jo0sbaFUWUYSfgcpwd5zM3x-Nrq8O4VYnRwziUpI";
@@ -197,6 +198,7 @@ export default function ItemCategories() {
           </div>
         </main>
       </div>
+      <AIChatbot section="categories" context="Item categories management page" />
     </SidebarProvider>
   );
 }

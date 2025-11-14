@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Edit, Trash2 } from "lucide-react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Tables() {
   const [tables, setTables] = useState<any[]>([]);
@@ -170,6 +171,7 @@ export default function Tables() {
         onCancel={() => setModalOpen(false)}
         onSave={handleSave}
       />
+      <AIChatbot section="tables" context="Table management page" />
     </SidebarProvider>
   );
 }

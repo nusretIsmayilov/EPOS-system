@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Eye, Clock, Pencil, Trash } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import AddOrderForm from "@/components/modals/AddOrderForm";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 const supabaseUrl = "https://vhvjfndzluxlmlnrkagj.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodmpmbmR6bHV4bG1sbnJrYWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMjc3NywiZXhwIjoyMDczNjc4Nzc3fQ.nv8Jo0sbaFUWUYSfgcpwd5zM3x-Nrq8O4VYnRwziUpI";
@@ -243,6 +244,7 @@ export default function Orders() {
         menuItems={menuItems}
         initialData={editingOrder}
       />
+      <AIChatbot section="orders" context="Orders management page" />
     </SidebarProvider>
   );
 }

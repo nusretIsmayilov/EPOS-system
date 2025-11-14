@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Settings } from "lucide-react";
 import { useState } from "react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function ModifierGroups() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -238,6 +239,7 @@ export default function ModifierGroups() {
           </div>
         </main>
       </div>
+      <AIChatbot section="modifier-groups" context="Modifier groups page" />
     </SidebarProvider>
   );
 }

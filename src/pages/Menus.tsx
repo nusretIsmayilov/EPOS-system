@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
 import { useState } from "react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Menus() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -159,6 +160,7 @@ export default function Menus() {
           </div>
         </main>
       </div>
+      <AIChatbot section="menus" context="Menu list page" />
     </SidebarProvider>
   );
 }

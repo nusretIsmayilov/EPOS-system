@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { Download, Calendar, TrendingUp, TrendingDown, DollarSign, Users, ShoppingBag } from "lucide-react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Report() {
   const metrics = [
@@ -149,6 +150,7 @@ export default function Report() {
           </div>
         </main>
       </div>
+      <AIChatbot section="report" context="Business reporting page" />
     </SidebarProvider>
   );
 }

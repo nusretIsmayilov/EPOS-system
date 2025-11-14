@@ -9,6 +9,7 @@ import { Plus, Package, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AddInventoryForm from "@/components/modals/AddInventoryForm";
 import KitchenOrdersModal from "@/components/modals/KitchenOrdersModal";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Inventory() {
   const [inventory, setInventory] = useState<any[]>([]);
@@ -183,6 +184,7 @@ export default function Inventory() {
         onClose={() => setIsKitchenOpen(false)}
         inventory={inventory}
       />
+      <AIChatbot section="inventory" context="Inventory management page" />
     </SidebarProvider>
   );
 }

@@ -34,7 +34,10 @@ export default function AddOrderForm({
     initialData || {
       customer: "",
       table: "",
-      items: [],
+      items: [
+        { "name": "Burger", "price": 10, "quantity": 2 },
+        { "name": "Pizza", "price": 15, "quantity": 1 }
+      ],
       total: "",
       status: "Pending",
       time: "",
@@ -124,23 +127,91 @@ export default function AddOrderForm({
 
         {/* Items */}
         <div className="w-[450px] mx-auto">
-          <Label>Items</Label>
-          <div className="flex flex-col gap-2 bg-gray-100 rounded-md p-3 max-h-[150px] overflow-y-auto">
-            {menuItems.map((item, i) => (
-              <label key={i} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.items.includes(item.name)}
-                  onChange={(e) =>
-                    handleCheckboxChange(item.name, e.target.checked)
-                  }
-                />
-                <span>
-                  {item.name} — <strong>{item.price}$</strong>
-                </span>
-              </label>
-            ))}
+          <div className="w-[450px] mx-auto">
+            <Label>Items</Label>
+
+            <div className="flex flex-col gap-3 bg-gray-100 rounded-md p-3 max-h-[200px] overflow-y-auto">
+              {menuItems.map((item, i) => {
+                const existing = formData.items.find((x: any) => x.name === item.name);
+                const quantity = existing?.quantity || 0;
+
+                return (
+                  <div key={i} className="flex items-center justify-between">
+                    <span>
+                      {item.name} — <strong>{item.price}$</strong>
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev: any) => {
+                            let items = [...prev.items];
+
+                            // quantity azalt
+                            if (quantity > 1) {
+                              items = items.map((x) =>
+                                x.name === item.name
+                                  ? { ...x, quantity: quantity - 1 }
+                                  : x
+                              );
+                            } else {
+                              // quantity 0 → ürünü tamamen kaldır
+                              items = items.filter((x) => x.name !== item.name);
+                            }
+
+                            const total = items.reduce(
+                              (sum, x) => sum + x.price * x.quantity,
+                              0
+                            );
+
+                            return { ...prev, items, total };
+                          });
+                        }}
+                      >
+                        -
+                      </Button>
+
+                      <span className="w-6 text-center">{quantity}</span>
+
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev: any) => {
+                            let items = [...prev.items];
+
+                            if (existing) {
+                              items = items.map((x) =>
+                                x.name === item.name
+                                  ? { ...x, quantity: quantity + 1 }
+                                  : x
+                              );
+                            } else {
+                              items.push({
+                                name: item.name,
+                                price: item.price,
+                                quantity: 1,
+                              });
+                            }
+
+                            const total = items.reduce(
+                              (sum, x) => sum + x.price * x.quantity,
+                              0
+                            );
+
+                            return { ...prev, items, total };
+                          });
+                        }}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
         </div>
 
         {/* Total */}

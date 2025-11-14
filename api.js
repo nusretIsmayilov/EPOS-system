@@ -1,4 +1,3 @@
-// api.js
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -9,36 +8,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- ENV KONTROLLERİ -------------------------------------------------
-
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const groqApiKey = process.env.GROQ_API_KEY;
-const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'; // Gerekirse .env'de değiştir
+const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL veya VITE_SUPABASE_URL .env içinde tanımlı olmalı');
+  throw new Error('SUPABASE_URL or VITE_SUPABASE_URL Must be defined in .env');
 }
 if (!supabaseServiceKey) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY (veya VITE_SUPABASE_ANON_KEY) .env içinde tanımlı olmalı');
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY ( or VITE_SUPABASE_ANON_KEY) Must be defined in .env');
 }
 if (!groqApiKey) {
-  throw new Error('GROQ_API_KEY .env içinde tanımlı olmalı');
+  throw new Error('GROQ_API_KEY Must be defined in .env');
 }
-
-// --- CLIENTLER -------------------------------------------------------
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const groq = new Groq({ apiKey: groqApiKey });
-
-// --- YARDIMCI FONKSİYONLAR -------------------------------------------
-
-/**
- * Herhangi bir tablo satırlarını kısa, insan okunur hale çevirir.
- * Şema bilmeden generic çalışır.
- */
 function summarizeRows(rows, maxFields = 6) {
   if (!rows || rows.length === 0) return 'No rows found.';
 
@@ -47,7 +35,6 @@ function summarizeRows(rows, maxFields = 6) {
       const entries = Object.entries(row || {})
         .filter(([key, value]) => {
           if (value === null || value === '' || typeof value === 'undefined') return false;
-          // Çok teknik kolonları gizle
           const ignore = [
             'id',
             'created_at',
@@ -74,10 +61,6 @@ function summarizeRows(rows, maxFields = 6) {
     .join('\n');
 }
 
-/**
- * Section'a göre ilgili tabloları Supabase'ten çekip
- * model için "database snapshot" metni üretir.
- */
 async function buildSectionContext(section) {
   try {
     switch (section) {
@@ -174,7 +157,6 @@ async function buildSectionContext(section) {
       }
 
       case 'pos': {
-        // POS için hem açık siparişler hem de masalar önemli olabilir
         const [ordersRes, tablesRes] = await Promise.all([
           supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10),
           supabase.from('tables').select('*').limit(20),
@@ -200,7 +182,6 @@ async function buildSectionContext(section) {
       }
 
       case 'dashboard': {
-        // Dashboard için birkaç sayısal özet
         const tables = ['orders', 'menu_items', 'customers', 'staff', 'reservations'];
 
         const counts = await Promise.all(
@@ -221,7 +202,6 @@ async function buildSectionContext(section) {
       }
 
       default: {
-        // General: sistemin genel özetini ver
         const { count: orderCount } = await supabase
           .from('orders')
           .select('id', { head: true, count: 'exact' });
@@ -246,8 +226,6 @@ Use these numbers to answer high-level questions. For detailed questions, ask th
   }
 }
 
-// --- ANA /chat ENDPOINTİ ---------------------------------------------
-
 app.post('/chat', async (req, res) => {
   const { message, section = 'general', context: uiContext = '' } = req.body || {};
 
@@ -256,10 +234,8 @@ app.post('/chat', async (req, res) => {
   }
 
   try {
-    // 1) İlgili section için Supabase verisini çek
     const dbContext = await buildSectionContext(section);
 
-    // 2) Sistem prompt'u
     const systemPrompt = `
 You are an AI assistant for a restaurant POS and management system.
 
@@ -278,7 +254,6 @@ You MUST follow these rules:
         ? `${message}\n\nAdditional UI context: ${uiContext}`
         : message;
 
-    // 3) Groq çağrısı
     const completion = await groq.chat.completions.create({
       model: groqModel,
       temperature: 0.2,
@@ -303,8 +278,6 @@ You MUST follow these rules:
     });
   }
 });
-
-// --- SERVER START ----------------------------------------------------
 
 const PORT = 3000;
 app.listen(PORT, () => {

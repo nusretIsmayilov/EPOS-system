@@ -4,6 +4,14 @@
 
 /* Restaurant POS System Design System - Based on Reference Screenshots */
 
+@layer components {
+  .dark [data-sidebar="menu-button"]:hover {
+    background-color: hsl(var(--sidebar-accent)) !important;
+    color: hsl(var(--sidebar-accent-foreground)) !important;
+  }
+}
+
+
 @layer base {
   :root {
     /* Main Background Colors */
@@ -75,6 +83,11 @@
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+
+    --sidebar-accent: 240 3.7% 20%;
+    /* hover arka plan koyu gri */
+    --sidebar-accent-foreground: 210 40% 98%;
+    /* yazı açık renk */
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
