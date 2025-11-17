@@ -1,93 +1,132 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, Loader2 } from "lucide-react";
+"use client";
 
-interface SessionItem {
-  id: string;
-  price: number;
-  quantity: number;
-}
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function PaymentSuccess() {
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const createOrder = async () => {
-      const sessionDataString = localStorage.getItem("stripe_checkout_session");
-      if (!sessionDataString) {
-        console.error("No session data found.");
-        setStatus("error");
-        return;
-      }
-
-      const sessionData: SessionItem[] = JSON.parse(sessionDataString);
-
-      const items = sessionData.map(item => item.id);
-      const total_amount = sessionData.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
+    const saveOrder = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
+        // ---------------------------
+        // 1) CART verisini al
+        // ---------------------------
+        const cartString = localStorage.getItem("stripe_checkout_session");
+        if (!cartString) return;
 
-        const customerName = (user?.user_metadata as any)?.full_name || "Guest";
+        const cart = JSON.parse(cartString);
+        const total = cart.reduce(
+          (sum: number, item: any) => sum + item.price * item.quantity,
+          0
+        );
 
-        const { data, error } = await supabase
+        // ---------------------------
+        // 2) Login olan kullanıcıyı al
+        // ---------------------------
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        let fullName = "Unknown Customer";
+
+        if (user) {
+          // ---------------------------
+          // 3) profiles tablosundan full_name al
+          // ---------------------------
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", user.id)
+            .single();
+
+          if (profile?.full_name) {
+            fullName = profile.full_name;
+          }
+        }
+
+        // ---------------------------
+        // 4) orders tablosuna ekle
+        // ---------------------------
+        const { data: order, error: orderErr } = await supabase
           .from("orders")
           .insert([
             {
-               order_number: `ORD-${Date.now()}`,
-              total: total_amount,
-              status: "preparing",
-              items: items,
-              user_id: user?.id || null,
-              customer_name: customerName
+              customer_name: fullName,
+              table: "POS",
+              status: "Pending",
+              time: new Date().toLocaleTimeString(),
+              total,
             },
           ])
-          .select();
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (orderErr) {
+          console.error("Order insert error:", orderErr);
+          return;
+        }
 
-        setStatus("success");
+        // ---------------------------
+        // 5) order_items tablosuna ekle
+        // ---------------------------
+        const orderItemsPayload = cart.map((item: any) => ({
+          order_id: order.id,
+          menu_item_id: item.isSet ? null : item.id,
+          menu_set_id: item.isSet ? item.id : null,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+        }));
+
+        const { error: itemErr } = await supabase
+          .from("order_items")
+          .insert(orderItemsPayload);
+
+        if (itemErr) {
+          console.error("Order items insert error:", itemErr);
+        }
+
+        // ---------------------------
+        // 6) LocalStorage temizle
+        // ---------------------------
         localStorage.removeItem("stripe_checkout_session");
-
-        setTimeout(() => navigate("/pos"), 3000);
       } catch (err) {
-        console.error("Error creating order:", err);
-        setStatus("error");
+        console.error(err);
+      } finally {
+        setLoading(false);
+
+        setTimeout(() => {
+          window.location.href = "/pos";
+        }, 1500);
       }
     };
 
-    createOrder();
-  }, [location, navigate]);
+    saveOrder();
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-center">
-      {status === "loading" && (
-        <>
-          <Loader2 className="w-12 h-12 animate-spin mb-4" />
-          <h1 className="text-2xl font-bold">Processing your order...</h1>
-        </>
-      )}
-      {status === "success" && (
-        <>
-          <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-          <h1 className="text-3xl font-bold">Payment Successful!</h1>
-          <p className="text-muted-foreground">
-            Your order has been placed. Redirecting you shortly...
-          </p>
-        </>
-      )}
-      {status === "error" && (
-        <>
-          <h1 className="text-3xl font-bold text-red-500">Error</h1>
-          <p className="text-muted-foreground">
-            There was an issue creating your order. Please contact support.
-          </p>
-        </>
-      )}
+    <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+      <div className="bg-green-100 text-green-600 rounded-full p-6 mb-4 animate-bounce shadow-lg">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-16 w-16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+
+      <h1 className="text-3xl font-bold text-green-700 mb-2">
+        Payment Successful!
+      </h1>
+
+      <p className="text-gray-600 text-lg">
+        Your order has been recorded.
+      </p>
     </div>
   );
 }

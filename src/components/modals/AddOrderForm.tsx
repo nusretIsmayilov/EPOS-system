@@ -2,18 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-type MenuItem = {
+interface MenuItem {
+  id: string;
   name: string;
   price: number;
-};
+}
 
 interface AddOrderFormProps {
   isOpen: boolean;
@@ -30,63 +24,137 @@ export default function AddOrderForm({
   menuItems,
   initialData,
 }: AddOrderFormProps) {
-  const [formData, setFormData] = useState<any>(
-    initialData || {
-      customer: "",
-      table: "",
-      items: [
-        { "name": "Burger", "price": 10, "quantity": 2 },
-        { "name": "Pizza", "price": 15, "quantity": 1 }
-      ],
-      total: "",
-      status: "Pending",
-      time: "",
-    }
-  );
+  const [formData, setFormData] = useState<any>({
+    customer: "",
+    table: "",
+    items: [],
+    total: 0,
+    status: "Pending",
+    time: "",
+  });
 
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Reset when opened
   useEffect(() => {
-    setFormData(
-      initialData || {
+    if (initialData) {
+      const convertedItems = initialData.order_items.map((oi: any) => {
+        const menu = menuItems.find((m) => m.id === oi.menu_item_id);
+
+        return {
+          id: menu?.id || oi.menu_item_id,
+          name: menu?.name || "Unknown Item",
+          price: menu?.price || oi.unit_price,
+          quantity: oi.quantity,
+        };
+      });
+
+      setFormData({
+        customer: initialData.customer_name,
+        table: initialData.table,
+        items: convertedItems,
+        total: initialData.total,
+        status: initialData.status,
+        time: initialData.time,
+      });
+    } else {
+      setFormData({
         customer: "",
         table: "",
         items: [],
-        total: "",
+        total: 0,
         status: "Pending",
-        time: "",
-      }
-    );
-  }, [initialData, isOpen]);
+        time: new Date().toLocaleTimeString(),
+      });
+    }
+  }, [initialData, menuItems, isOpen]);
 
-  const handleCheckboxChange = (itemName: string, checked: boolean) => {
+
+
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (formRef.current && !formRef.current.contains(e.target as Node)) {
+      onCancel();
+    }
+  };
+
+  // Add quantity
+  const increaseQty = (item: MenuItem) => {
     setFormData((prev: any) => {
-      const current = prev.items || [];
-      const newItems = checked
-        ? [...current, itemName]
-        : current.filter((v: string) => v !== itemName);
+      const exists = prev.items.find((x: any) => x.id === item.id);
 
-      const totalPrice = menuItems
-        .filter((item) => newItems.includes(item.name))
-        .reduce((sum, item) => sum + (item.price || 0), 0);
+      let updatedItems;
+      if (exists) {
+        updatedItems = prev.items.map((x: any) =>
+          x.id === item.id ? { ...x, quantity: x.quantity + 1 } : x
+        );
+      } else {
+        updatedItems = [
+          ...prev.items,
+          {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: 1,
+            isSet: item.isSet || false,
+          },
+        ];
+      }
 
-      return { ...prev, items: newItems, total: `${totalPrice}` };
+      const newTotal = updatedItems.reduce(
+        (sum: number, i: any) => sum + i.price * i.quantity,
+        0
+      );
+
+      return { ...prev, items: updatedItems, total: newTotal };
     });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Decrease quantity
+  const decreaseQty = (item: MenuItem) => {
+    setFormData((prev: any) => {
+      const exists = prev.items.find((x: any) => x.id === item.id);
+      if (!exists) return prev;
+
+      let updatedItems;
+      if (exists.quantity <= 1) {
+        updatedItems = prev.items.filter((x: any) => x.id !== item.id);
+      } else {
+        updatedItems = prev.items.map((x: any) =>
+          x.id === item.id ? { ...x, quantity: x.quantity - 1 } : x
+        );
+      }
+
+      const newTotal = updatedItems.reduce(
+        (sum: number, i: any) => sum + i.price * i.quantity,
+        0
+      );
+
+      return { ...prev, items: updatedItems, total: newTotal };
+    });
+  };
+
+  const handleChange = (e: any) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
-    onSave(formData);
-    onCancel();
-  };
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (formRef.current && !formRef.current.contains(e.target as Node))
-      onCancel();
+    // items MUST be: [{id, price, quantity}]
+    const cleaned = {
+      ...formData,
+      items: formData.items.map((i: any) => ({
+  id: i.id,
+  price: i.price,
+  quantity: i.quantity,
+  isSet: i.isSet || false,   // ⭐ MUTLAKA eklenmeli
+}))
+,
+    };
+
+    onSave(cleaned);
+    onCancel();
   };
 
   if (!isOpen) return null;
@@ -99,9 +167,9 @@ export default function AddOrderForm({
       <form
         ref={formRef}
         onSubmit={handleSubmit}
-        className="flex flex-col gap-[20px] w-[550px] h-[520px] bg-white space-y-3.5 rounded-[20px] pt-4 overflow-y-auto p-10"
+        className="flex flex-col gap-[20px] w-[550px] max-h-[90vh] bg-white rounded-[20px] p-10 overflow-y-auto"
       >
-        {/* Customer */}
+        {/* CUSTOMER */}
         <div className="w-[450px] mx-auto">
           <Label>Customer</Label>
           <Input
@@ -113,155 +181,90 @@ export default function AddOrderForm({
           />
         </div>
 
-        {/* Table */}
+        {/* TABLE */}
         <div className="w-[450px] mx-auto">
           <Label>Table</Label>
           <Input
             name="table"
-            placeholder="Table (e.g. T1, Delivery)"
+            placeholder="Table (e.g. T1)"
             value={formData.table}
             onChange={handleChange}
             className="bg-gray-200"
           />
         </div>
 
-        {/* Items */}
+        {/* MENU ITEMS */}
         <div className="w-[450px] mx-auto">
-          <div className="w-[450px] mx-auto">
-            <Label>Items</Label>
+          <Label>Select Items</Label>
 
-            <div className="flex flex-col gap-3 bg-gray-100 rounded-md p-3 max-h-[200px] overflow-y-auto">
-              {menuItems.map((item, i) => {
-                const existing = formData.items.find((x: any) => x.name === item.name);
-                const quantity = existing?.quantity || 0;
+          <div className="flex flex-col gap-3 bg-gray-100 rounded-md p-3 max-h-[250px] overflow-y-auto">
+            {menuItems.map((item) => {
+              const exists = formData.items.find((x: any) => x.id === item.id);
+              const qty = exists?.quantity || 0;
 
-                return (
-                  <div key={i} className="flex items-center justify-between">
-                    <span>
-                      {item.name} — <strong>{item.price}$</strong>
-                    </span>
+              return (
+                <div
+                  key={item.id}
+                  className="flex justify-between items-center"
+                >
+                  <span>
+                    {item.name} — <strong>{item.price}$</strong>
+                  </span>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setFormData((prev: any) => {
-                            let items = [...prev.items];
+                  <div className="flex items-center gap-2">
+                    <Button type="button" onClick={() => decreaseQty(item)}>
+                      -
+                    </Button>
 
-                            // quantity azalt
-                            if (quantity > 1) {
-                              items = items.map((x) =>
-                                x.name === item.name
-                                  ? { ...x, quantity: quantity - 1 }
-                                  : x
-                              );
-                            } else {
-                              // quantity 0 → ürünü tamamen kaldır
-                              items = items.filter((x) => x.name !== item.name);
-                            }
+                    <span className="w-6 text-center">{qty}</span>
 
-                            const total = items.reduce(
-                              (sum, x) => sum + x.price * x.quantity,
-                              0
-                            );
-
-                            return { ...prev, items, total };
-                          });
-                        }}
-                      >
-                        -
-                      </Button>
-
-                      <span className="w-6 text-center">{quantity}</span>
-
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setFormData((prev: any) => {
-                            let items = [...prev.items];
-
-                            if (existing) {
-                              items = items.map((x) =>
-                                x.name === item.name
-                                  ? { ...x, quantity: quantity + 1 }
-                                  : x
-                              );
-                            } else {
-                              items.push({
-                                name: item.name,
-                                price: item.price,
-                                quantity: 1,
-                              });
-                            }
-
-                            const total = items.reduce(
-                              (sum, x) => sum + x.price * x.quantity,
-                              0
-                            );
-
-                            return { ...prev, items, total };
-                          });
-                        }}
-                      >
-                        +
-                      </Button>
-                    </div>
+                    <Button type="button" onClick={() => increaseQty(item)}>
+                      +
+                    </Button>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-
         </div>
 
-        {/* Total */}
+        {/* TOTAL */}
         <div className="w-[450px] mx-auto">
           <Label>Total</Label>
           <Input
-            name="total"
-            placeholder="Total"
-            value={formData.total}
             readOnly
+            value={formData.total}
             className="bg-gray-200 cursor-not-allowed"
           />
         </div>
 
-        {/* Status */}
+        {/* STATUS */}
         <div className="w-[450px] mx-auto">
           <Label>Status</Label>
-          <Select
+          <Input
+            name="status"
             value={formData.status}
-            onValueChange={(val) =>
-              setFormData((prev: any) => ({ ...prev, status: val }))
-            }
-          >
-            <SelectTrigger className="bg-gray-200">
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Preparing">Preparing</SelectItem>
-              <SelectItem value="Ready">Ready</SelectItem>
-              <SelectItem value="Delivered">Delivered</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={handleChange}
+            className="bg-gray-200"
+          />
         </div>
 
-        {/* Time */}
+        {/* TIME */}
         <div className="w-[450px] mx-auto">
           <Label>Time</Label>
           <Input
             name="time"
-            placeholder="e.g. 10 mins ago"
             value={formData.time}
             onChange={handleChange}
             className="bg-gray-200"
           />
         </div>
 
-        <Button onClick={onCancel} className="text-black bg-white" type="button">
+        {/* BUTTONS */}
+        <Button type="button" className="text-black bg-white" onClick={onCancel}>
           Cancel
         </Button>
+
         <Button type="submit">Save</Button>
       </form>
     </div>
