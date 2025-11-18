@@ -9,31 +9,29 @@ export default function PaymentSuccess() {
   useEffect(() => {
     const saveOrder = async () => {
       try {
-        // ---------------------------
-        // 1) CART verisini al
-        // ---------------------------
+        // CART VERİSİNİ AL
         const cartString = localStorage.getItem("stripe_checkout_session");
         if (!cartString) return;
 
         const cart = JSON.parse(cartString);
+
+        // MASA BİLGİSİ (URL'DEN)
+        const urlParams = new URLSearchParams(window.location.search);
+        const table = urlParams.get("table") ?? "POS";
+
+        // TOPLAM HESAPLA
         const total = cart.reduce(
           (sum: number, item: any) => sum + item.price * item.quantity,
           0
         );
 
-        // ---------------------------
-        // 2) Login olan kullanıcıyı al
-        // ---------------------------
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        // KULLANICI BİLGİSİ AL
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
 
-        let fullName = "Unknown Customer";
+        let fullName = "Customer";
 
         if (user) {
-          // ---------------------------
-          // 3) profiles tablosundan full_name al
-          // ---------------------------
           const { data: profile } = await supabase
             .from("profiles")
             .select("full_name")
@@ -45,33 +43,29 @@ export default function PaymentSuccess() {
           }
         }
 
-        // ---------------------------
-        // 4) orders tablosuna ekle
-        // ---------------------------
-        const { data: order, error: orderErr } = await supabase
+        // 🔥 1) ORDER EKLE
+        const { data: insertedOrder, error: orderErr } = await supabase
           .from("orders")
           .insert([
             {
               customer_name: fullName,
-              table: "POS",
+              table: table,
               status: "Pending",
               time: new Date().toLocaleTimeString(),
-              total,
+              total: total,
             },
           ])
           .select()
           .single();
 
-        if (orderErr) {
+        if (orderErr || !insertedOrder) {
           console.error("Order insert error:", orderErr);
           return;
         }
 
-        // ---------------------------
-        // 5) order_items tablosuna ekle
-        // ---------------------------
-        const orderItemsPayload = cart.map((item: any) => ({
-          order_id: order.id,
+        // 🔥 2) ORDER_ITEMS EKLE
+        const itemsPayload = cart.map((item: any) => ({
+          order_id: insertedOrder.id,
           menu_item_id: item.isSet ? null : item.id,
           menu_set_id: item.isSet ? item.id : null,
           quantity: item.quantity,
@@ -79,26 +73,25 @@ export default function PaymentSuccess() {
           total_price: item.price * item.quantity,
         }));
 
-        const { error: itemErr } = await supabase
+        const { error: itemsErr } = await supabase
           .from("order_items")
-          .insert(orderItemsPayload);
+          .insert(itemsPayload);
 
-        if (itemErr) {
-          console.error("Order items insert error:", itemErr);
+        if (itemsErr) {
+          console.error("Order items insert error:", itemsErr);
+          return;
         }
 
-        // ---------------------------
-        // 6) LocalStorage temizle
-        // ---------------------------
+        // TEMİZLE
         localStorage.removeItem("stripe_checkout_session");
       } catch (err) {
-        console.error(err);
+        console.error("PaymentSuccess error:", err);
       } finally {
         setLoading(false);
 
         setTimeout(() => {
           window.location.href = "/pos";
-        }, 1500);
+        }, 1200);
       }
     };
 
@@ -107,7 +100,7 @@ export default function PaymentSuccess() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
-      <div className="bg-green-100 text-green-600 rounded-full p-6 mb-4 animate-bounce shadow-lg">
+      <div className="bg-green-100 text-green-600 rounded-full p-6 mb-4 shadow-lg">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-16 w-16"

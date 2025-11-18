@@ -19,9 +19,6 @@ export default function POS() {
   >([]);
   const queryClient = useQueryClient();
 
-  // -------------------------------
-  // FETCH NORMAL MENU ITEMS
-  // -------------------------------
   const { data: menuItems, isLoading: isLoadingItems } = useQuery({
     queryKey: ["menu-items"],
     queryFn: async () => {
@@ -36,9 +33,7 @@ export default function POS() {
     },
   });
 
-  // -------------------------------
-  // FETCH ACTIVE MENU SETS
-  // -------------------------------
+
   const { data: menuSets, isLoading: isLoadingSets } = useQuery({
     queryKey: ["menu-sets"],
     queryFn: async () => {
@@ -53,9 +48,6 @@ export default function POS() {
     },
   });
 
-  // -------------------------------
-  // COMBINE MENU ITEMS + MENU SETS
-  // -------------------------------
   const combinedMenu =
     menuItems || menuSets
       ? [
@@ -69,9 +61,7 @@ export default function POS() {
         ]
       : [];
 
-  // -------------------------------
-  // CART ACTIONS
-  // -------------------------------
+
   const addToCart = (item: any) => {
     const existing = cart.find((c) => c.id === item.id);
     if (existing) {
@@ -108,9 +98,7 @@ export default function POS() {
     0
   );
 
-  // -------------------------------
-  // STRIPE CHECKOUT
-  // -------------------------------
+
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
@@ -152,9 +140,7 @@ export default function POS() {
     }
   };
 
-  // ---------------------------------
-  // UI RENDER
-  // ---------------------------------
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -175,9 +161,7 @@ export default function POS() {
 
           <div className="flex-1 p-6">
             <div className="grid lg:grid-cols-3 gap-6">
-              {/* -------------------------- */}
-              {/* MENU LIST (ITEMS + SETS)  */}
-              {/* -------------------------- */}
+  
               {isLoadingItems || isLoadingSets ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <Card key={i}>
@@ -238,9 +222,6 @@ export default function POS() {
                 </div>
               )}
 
-              {/* -------------------------- */}
-              {/* CART SECTION               */}
-              {/* -------------------------- */}
               <div>
                 <Card>
                   <CardHeader>

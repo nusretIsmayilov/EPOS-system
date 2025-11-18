@@ -69,8 +69,6 @@ export default function AddOrderForm({
     }
   }, [initialData, menuItems, isOpen]);
 
-
-
   // Handle overlay click
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (formRef.current && !formRef.current.contains(e.target as Node)) {
@@ -140,15 +138,13 @@ export default function AddOrderForm({
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-
-    // items MUST be: [{id, price, quantity}]
     const cleaned = {
       ...formData,
       items: formData.items.map((i: any) => ({
   id: i.id,
   price: i.price,
   quantity: i.quantity,
-  isSet: i.isSet || false,   // ⭐ MUTLAKA eklenmeli
+  isSet: i.isSet || false,
 }))
 ,
     };

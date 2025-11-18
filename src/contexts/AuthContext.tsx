@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+        .maybeSingle();
 
       if (!error && data) {
         setProfile(data);
@@ -49,39 +49,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!createError && newProfile) {
           setProfile(newProfile);
         } else {
-          console.error('Failed to create profile:', createError);
           setProfile(null);
         }
-      } else if (error) {
-        console.error('Profile fetch error:', error);
-        setProfile(null);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch (err) {
       setProfile(null);
     } finally {
-      setLoading(false); // Ensure loading is always set to false
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     let mounted = true;
-    
-    // Set up auth state listener
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        
         if (!mounted) return;
-        
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          // Use setTimeout to avoid blocking the auth callback
           setTimeout(() => {
-            if (mounted) {
-              fetchProfile(session.user.id);
-            }
+            if (mounted) fetchProfile(session.user.id);
           }, 0);
         } else {
           setProfile(null);
@@ -90,26 +80,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (!mounted) return;
-        
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           await fetchProfile(session.user.id);
         } else {
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Error getting session:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+      } catch (err) {
+        setLoading(false);
       }
     };
 
@@ -122,58 +108,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (data.user && !error) {
-        window.location.href = '/';
-      }
-      
-      return { error };
-    } catch (error) {
-      return { error };
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (data.user && !error) window.location.href = '/';
+    return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role = 'customer') => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            role: role
-          }
+  const signUp = async (email, password, fullName, role = 'customer') => {
+    const redirectUrl = `${window.location.origin}/`;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+          role: role
         }
-      });
-      
-      return { error };
-    } catch (error) {
-      return { error };
-    }
+      }
+    });
+
+    return { error };
   };
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      window.location.href = '/auth';
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    window.location.href = '/auth';
   };
 
   const isSystemSuperAdmin = profile?.role === 'system_super_admin';
-  const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'super_admin' ||
+    profile?.role === 'admin' ||
+    profile?.role === 'manager';
+
   const isStaff = isAdmin || profile?.role === 'staff';
 
   const value = {
@@ -189,6 +162,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isSystemSuperAdmin
   };
 
+  // ⭐ ⭐ ⭐ EN ÖNEMLİ KISIM: (YANIP SÖNMEYİ ÖNLER)
+  if (loading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        {/* istersen spinner koyabilirsin */}
+      </div>
+    );
+  }
+  // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+
   return (
     <AuthContext.Provider value={value}>
       {children}
@@ -198,8 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context)
     throw new Error('useAuth must be used within an AuthProvider');
-  }
   return context;
 }

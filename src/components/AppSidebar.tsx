@@ -62,7 +62,8 @@ const managementItems: NavItem[] = [
 ];
 
 const systemItems: NavItem[] = [
-  { title: "Payments", url: "/payments", icon: CreditCard, permissions: ['manage_payments', 'view_pos'] },
+  // FIXED: Customer artık bunu göremez
+  { title: "Payments", url: "/payments", icon: CreditCard, permissions: ['manage_payments'] },
   { title: "Report", url: "/report", icon: BarChart3, permissions: ['view_reports'] },
   { title: "Inventory", url: "/inventory", icon: Package, permissions: ['view_inventory'] },
   { title: "Settings", url: "/settings", icon: Settings, permissions: ['view_settings'] },
@@ -110,15 +111,12 @@ export function AppSidebar() {
     sectionKey: string;
   }) => {
     const filteredItems = filterItemsByPermission(items);
-    
-    // Don't render section if no items are visible
     if (filteredItems.length === 0) return null;
     
     const hasActiveItem = filteredItems.some((item) => isActive(item.url));
     const isOpen = openSections[sectionKey] || hasActiveItem;
 
     if (!title) {
-      // Main section without collapsible
       return (
         <SidebarGroup>
           <SidebarGroupContent>
@@ -173,7 +171,6 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="text-sidebar-foreground text-2xl font-bold">ell</div>
       </div>

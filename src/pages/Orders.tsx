@@ -18,9 +18,6 @@ export default function Orders() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
 
-  // --------------------------------------------------
-  // FETCH MENU ITEMS + MENU SETS (for New Order form)
-  // --------------------------------------------------
   const fetchMenuItems = async () => {
     const { data: items } = await supabase
       .from("menu_items")
@@ -42,10 +39,6 @@ export default function Orders() {
 
     setMenuItems(combined);
   };
-
-  // --------------------------------------------------
-  // FETCH ORDERS WITH RELATIONS
-  // --------------------------------------------------
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from("orders")
@@ -75,11 +68,7 @@ export default function Orders() {
     fetchMenuItems();
   }, []);
 
-  // --------------------------------------------------
-  // SAVE ORDER (NEW or UPDATE)
-  // --------------------------------------------------
   const handleSaveOrder = async (data: any) => {
-    // 🟡 Eğer editleme yapılıyorsa → UPDATE
     if (editingOrder) {
       await supabase
         .from("orders")
@@ -104,14 +93,11 @@ export default function Orders() {
       }));
 
       await supabase.from("order_items").insert(updatedItems);
-
       setEditingOrder(null);
       setIsFormOpen(false);
       fetchOrders();
       return;
     }
-
-    // 🟢 Yeni sipariş ekleme (CREATE)
     const { data: order } = await supabase
       .from("orders")
       .insert([
@@ -134,16 +120,11 @@ export default function Orders() {
       unit_price: item.price,
       total_price: item.price * item.quantity,
     }));
-
     await supabase.from("order_items").insert(items);
 
     setIsFormOpen(false);
     fetchOrders();
   };
-
-  // --------------------------------------------------
-  // DELETE ORDER
-  // --------------------------------------------------
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm("Delete order?")) return;
 
@@ -152,7 +133,6 @@ export default function Orders() {
 
     fetchOrders();
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending":
@@ -172,7 +152,6 @@ export default function Orders() {
     const num = String(index + 1).padStart(3, "0");
     return `Order #${num}`;
   };
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -189,7 +168,6 @@ export default function Orders() {
                 </p>
               </div>
             </div>
-
             <Button
               onClick={() => {
                 setEditingOrder(null);
@@ -261,7 +239,6 @@ export default function Orders() {
                           ${order.total}
                         </span>
                       </div>
-
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         {order.time}
@@ -274,7 +251,6 @@ export default function Orders() {
           </div>
         </main>
       </div>
-
       <AddOrderForm
         isOpen={isFormOpen}
         onCancel={() => setIsFormOpen(false)}
@@ -282,7 +258,6 @@ export default function Orders() {
         menuItems={menuItems}
         initialData={editingOrder}
       />
-
       <AIChatbot section="orders" context="Orders management page" />
     </SidebarProvider>
   );
