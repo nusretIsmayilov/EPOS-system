@@ -47,128 +47,214 @@ const App = () => (
         <ThemeProvider attribute="class" defaultTheme="light">
           <Toaster />
           <Sonner />
+
           <BrowserRouter>
             <Routes>
+
+              {/* Public */}
               <Route path="/auth" element={<Auth />} />
-              <Route path="/system-admin" element={
-                <ProtectedRoute>
-                  <SystemAdmin />
-                </ProtectedRoute>
-              } />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute requireStaff>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
 
-              {/* Menu Management */}
-              <Route path="/menus" element={
-                <ProtectedRoute requireStaff>
-                  <Menus />
-                </ProtectedRoute>
-              } />
-              <Route path="/menu-items" element={
-                <ProtectedRoute requireStaff>
-                  <MenuItems />
-                </ProtectedRoute>
-              } />
-              <Route path="/item-categories" element={
-                <ProtectedRoute requireAdmin>
-                  <ItemCategories />
-                </ProtectedRoute>
-              } />
-              <Route path="/modifier-groups" element={
-                <ProtectedRoute requireAdmin>
-                  <ModifierGroups />
-                </ProtectedRoute>
-              } />
-              <Route path="/item-modifiers" element={
-                <ProtectedRoute requireAdmin>
-                  <ItemModifiers />
-                </ProtectedRoute>
-              } />
+              {/* System Admin (super user) */}
+              <Route
+                path="/system-admin"
+                element={
+                  <ProtectedRoute requiredPermissions={["system_admin"]}>
+                    <SystemAdmin />
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* Operations */}
-              <Route path="/tables" element={
-                <ProtectedRoute requireStaff>
-                  <Tables />
-                </ProtectedRoute>
-              } />
-              <Route path="/waiter-requests" element={
-                <ProtectedRoute requireStaff>
-                  <WaiterRequests />
-                </ProtectedRoute>
-              } />
-              <Route path="/reservations" element={
-                <ProtectedRoute requireStaff>
-                  <Reservations />
-                </ProtectedRoute>
-              } />
-              <Route path="/pos" element={
-                <ProtectedRoute>
-                  <POS />
-                </ProtectedRoute>
-              } />
+              {/* Dashboard */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                }
+              />
 
-              <Route path="/payment-success" element={
-                <ProtectedRoute>
-                  <PaymentSuccess />
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_reports", "view_analytics"]}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* Management */}
-              <Route path="/orders" element={
-                <ProtectedRoute requireStaff>
-                  <Orders />
-                </ProtectedRoute>
-              } />
-              <Route path="/customers" element={
-                <ProtectedRoute requireStaff>
-                  <Customers />
-                </ProtectedRoute>
-              } />
-              <Route path="/staff" element={
-                <ProtectedRoute requireAdmin>
-                  <Staff />
-                </ProtectedRoute>
-              } />
-              <Route path="/delivery-executive" element={
-                <ProtectedRoute requireAdmin>
-                  <DeliveryExecutive />
-                </ProtectedRoute>
-              } />
+              {/* MENU MANAGEMENT */}
+              <Route
+                path="/menus"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_menu_items"]}>
+                    <Menus />
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* System */}
-              <Route path="/payments" element={
-                <ProtectedRoute requireStaff>
-                  <Payments />
-                </ProtectedRoute>
-              } />
-              <Route path="/inventory" element={
-                <ProtectedRoute requireStaff>
-                  <Inventory />
-                </ProtectedRoute>
-              } />
-              <Route path="/report" element={
-                <ProtectedRoute requireAdmin>
-                  <Report />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute requireAdmin>
-                  <Settings />
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/menu-items"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_menu_items"]}>
+                    <MenuItems />
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route
+                path="/item-categories"
+                element={
+                  <ProtectedRoute requiredPermissions={["manage_menu_items"]}>
+                    <ItemCategories />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/modifier-groups"
+                element={
+                  <ProtectedRoute requiredPermissions={["manage_menu_items"]}>
+                    <ModifierGroups />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/item-modifiers"
+                element={
+                  <ProtectedRoute requiredPermissions={["manage_menu_items"]}>
+                    <ItemModifiers />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* OPERATIONS */}
+              <Route
+                path="/tables"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_tables"]}>
+                    <Tables />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/waiter-requests"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_orders"]}>
+                    <WaiterRequests />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/reservations"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_reservations"]}>
+                    <Reservations />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/pos"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_pos"]}>
+                    <POS />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/payment-success"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_pos"]}>
+                    <PaymentSuccess />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* MANAGEMENT */}
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_orders"]}>
+                    <Orders />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/customers"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_customers"]}>
+                    <Customers />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/staff"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_staff"]}>
+                    <Staff />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/delivery-executive"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_staff"]}>
+                    <DeliveryExecutive />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* SYSTEM */}
+              <Route
+                path="/payments"
+                element={
+                  <ProtectedRoute requiredPermissions={["manage_payments"]}>
+                    <Payments />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/inventory"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_inventory"]}>
+                    <Inventory />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/report"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_reports"]}>
+                    <Report />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute requiredPermissions={["view_settings"]}>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* NOT FOUND */}
               <Route path="*" element={<NotFound />} />
+
             </Routes>
           </BrowserRouter>
+
         </ThemeProvider>
       </AuthProvider>
     </TooltipProvider>

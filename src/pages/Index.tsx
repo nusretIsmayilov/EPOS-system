@@ -5,11 +5,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ChefHat, 
-  ShoppingCart, 
-  Users, 
-  TrendingUp, 
+import {
+  ChefHat,
+  ShoppingCart,
+  Users,
+  TrendingUp,
   Clock,
   Star,
   DollarSign,
@@ -26,11 +26,25 @@ export default function Index() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only redirect if we're not loading and the user is confirmed to be system super admin
-    if (!loading && isSystemSuperAdmin) {
-      navigate('/system-admin');
+    if (loading || !profile) return;
+
+    if (profile.role === "cashier") {
+      navigate("/payments", { replace: true });
+      return;
     }
-  }, [isSystemSuperAdmin, loading, navigate, profile]);
+
+    if (isSystemSuperAdmin) {
+      navigate('/system-admin');
+      return;
+    }
+
+    if (profile.role === "kitchen_staff") {
+      navigate('/orders');
+      return;
+    }
+
+  }, [loading, profile, isSystemSuperAdmin, navigate]);
+
 
   // Show loading state while auth is being determined
   if (loading) {
@@ -224,7 +238,7 @@ export default function Index() {
           </div>
         </main>
       </div>
-      
+
       <AIChatbot section="general" context={`User role: ${profile?.role}, Restaurant overview page`} />
     </SidebarProvider>
   );

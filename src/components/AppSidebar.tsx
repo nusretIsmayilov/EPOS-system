@@ -1,9 +1,9 @@
-import { 
-  LayoutDashboard, 
-  Menu, 
-  Users, 
-  ShoppingCart, 
-  Package, 
+import {
+  LayoutDashboard,
+  Menu,
+  Users,
+  ShoppingCart,
+  Package,
   Calendar,
   CreditCard,
   BarChart3,
@@ -12,6 +12,7 @@ import {
   Truck,
   ChevronDown
 } from "lucide-react";
+
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -24,9 +25,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useState } from "react";
+
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useEffect, useState } from "react";
 
 interface NavItem {
   title: string;
@@ -40,40 +42,45 @@ const mainItems: NavItem[] = [
 ];
 
 const menuItems: NavItem[] = [
-  { title: "Menus", url: "/menus", icon: Menu, permissions: ['view_menu_items'] },
-  { title: "Menu Items", url: "/menu-items", icon: Menu, permissions: ['view_menu_items'] },
-  { title: "Item Categories", url: "/item-categories", icon: Menu, permissions: ['view_menu_items'] },
-  { title: "Modifier Groups", url: "/modifier-groups", icon: Menu, permissions: ['view_menu_items'] },
-  { title: "Item Modifiers", url: "/item-modifiers", icon: Menu, permissions: ['view_menu_items'] },
+  { title: "Menus", url: "/menus", icon: Menu, permissions: ["view_menus"] },
+  { title: "Menu Items", url: "/menu-items", icon: Menu, permissions: ["view_menu_items"] },
+
+  // Bunları sadece ADMIN görebilsin
+  { title: "Item Categories", url: "/item-categories", icon: Menu, permissions: ["manage_menu_items"] },
+  { title: "Modifier Groups", url: "/modifier-groups", icon: Menu, permissions: ["manage_menu_items"] },
+  { title: "Item Modifiers", url: "/item-modifiers", icon: Menu, permissions: ["manage_menu_items"] },
 ];
 
 const operationsItems: NavItem[] = [
-  { title: "Tables", url: "/tables", icon: UtensilsCrossed, permissions: ['view_tables'] },
-  { title: "Waiter Requests", url: "/waiter-requests", icon: Users, permissions: ['view_orders'] },
-  { title: "Reservations", url: "/reservations", icon: Calendar, permissions: ['view_reservations'] },
-  { title: "POS", url: "/pos", icon: ShoppingCart, permissions: ['view_pos'] },
+  { title: "Tables", url: "/tables", icon: UtensilsCrossed, permissions: ["view_tables"] },
+  { title: "Waiter Requests", url: "/waiter-requests", icon: Users, permissions: ["view_waiter_requests"] },
+
+  { title: "Reservations", url: "/reservations", icon: Calendar, permissions: ["view_reservations"] },
+  { title: "POS", url: "/pos", icon: ShoppingCart, permissions: ["view_pos"] },
 ];
 
 const managementItems: NavItem[] = [
-  { title: "Orders", url: "/orders", icon: Package, permissions: ['view_orders'] },
-  { title: "Customers", url: "/customers", icon: Users, permissions: ['view_customers'] },
-  { title: "Staff", url: "/staff", icon: Users, permissions: ['view_staff'] },
-  { title: "Delivery Executive", url: "/delivery-executive", icon: Truck, permissions: ['view_staff'] },
+  { title: "Orders", url: "/orders", icon: Package, permissions: ["view_orders"] },
+  { title: "Customers", url: "/customers", icon: Users, permissions: ["view_customers"] },
+  { title: "Staff", url: "/staff", icon: Users, permissions: ["view_staff"] },
+  { title: "Delivery Executive", url: "/delivery-executive", icon: Truck, permissions: ["view_staff"] },
 ];
 
 const systemItems: NavItem[] = [
-  // FIXED: Customer artık bunu göremez
-  { title: "Payments", url: "/payments", icon: CreditCard, permissions: ['manage_payments'] },
-  { title: "Report", url: "/report", icon: BarChart3, permissions: ['view_reports'] },
-  { title: "Inventory", url: "/inventory", icon: Package, permissions: ['view_inventory'] },
-  { title: "Settings", url: "/settings", icon: Settings, permissions: ['view_settings'] },
+  { title: "Payments", url: "/payments", icon: CreditCard, permissions: ["manage_payments"] },
+  { title: "Report", url: "/report", icon: BarChart3, permissions: ["view_reports"] },
+  { title: "Inventory", url: "/inventory", icon: Package, permissions: ["view_inventory"] },
+  { title: "Settings", url: "/settings", icon: Settings, permissions: ["view_settings"] },
 ];
+
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+
   const { hasAnyPermission, loading } = usePermissions();
+
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     main: true,
     menu: true,
@@ -82,78 +89,72 @@ export function AppSidebar() {
     system: true,
   });
 
-  const isActive = (path: string) => currentPath === path;
   const isCollapsed = state === "collapsed";
 
-  const toggleSection = (section: string) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
+  
+  // --- NEW FIX ---
+  // Açılması gereken section varsa (aktif path o section’da ise), sadece MOUNT anında aç
+  useEffect(() => {
+    const sectionMap: Record<string, NavItem[]> = {
+      main: mainItems,
+      menu: menuItems,
+      operations: operationsItems,
+      management: managementItems,
+      system: systemItems,
+    };
+
+    Object.entries(sectionMap).forEach(([key, items]) => {
+      if (items.some(item => item.url === currentPath)) {
+        setOpenSections(prev => ({ ...prev, [key]: true }));
+      }
+    });
+  }, []); // <-- sadece ilk render’da çalışır
 
   const filterItemsByPermission = (items: NavItem[]) => {
-    if (loading) return items; // Show all items while loading
-    
-    return items.filter(item => {
-      if (!item.permissions || item.permissions.length === 0) return true;
-      return hasAnyPermission(item.permissions);
-    });
-  };
+  // Permissions yüklenene kadar, permission isteyen hiçbir item gösterme
+  if (loading || !usePermissions) {
+    return items.filter(item =>
+      !item.permissions || item.permissions.length === 0
+    );
+  }
 
-  const SidebarSection = ({ 
-    title, 
-    items, 
-    sectionKey
-  }: { 
-    title?: string; 
-    items: NavItem[]; 
-    sectionKey: string;
-  }) => {
+  return items.filter(item => {
+    if (!item.permissions || item.permissions.length === 0) return true;
+    return hasAnyPermission(item.permissions);
+  });
+};
+
+  const SidebarSection = ({ title, items, sectionKey }: any) => {
     const filteredItems = filterItemsByPermission(items);
     if (filteredItems.length === 0) return null;
-    
-    const hasActiveItem = filteredItems.some((item) => isActive(item.url));
-    const isOpen = openSections[sectionKey] || hasActiveItem;
 
-    if (!title) {
-      return (
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="data-[active=true]:bg-black data-[active=true]:text-white hover:bg-gray-100">
-                    <NavLink to={item.url} end>
-                      <item.icon className="w-4 h-4" />
-                      {!isCollapsed && <span className="text-sm">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      );
-    }
+    const isOpen = openSections[sectionKey];
 
     return (
-      <Collapsible open={isOpen} onOpenChange={() => toggleSection(sectionKey)}>
+      <Collapsible open={isOpen} onOpenChange={() =>
+        setOpenSections(prev => ({ ...prev, [sectionKey]: !prev[sectionKey] }))
+      }>
         <SidebarGroup>
-          <CollapsibleTrigger asChild>
-            <SidebarGroupLabel className="group/label text-gray-600 text-xs font-medium hover:text-gray-800 cursor-pointer flex items-center justify-between py-2">
-              {!isCollapsed && title}
-              {!isCollapsed && (
-                <ChevronDown className="w-3 h-3 transition-transform group-data-[state=open]/label:rotate-180" />
-              )}
-            </SidebarGroupLabel>
-          </CollapsibleTrigger>
+          {title && (
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="group/label text-gray-600 text-xs font-medium hover:text-gray-800 cursor-pointer flex items-center justify-between py-2">
+                {!isCollapsed && title}
+                {!isCollapsed && (
+                  <ChevronDown className="w-3 h-3 transition-transform group-data-[state=open]/label:rotate-180" />
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+          )}
           <CollapsibleContent>
             <SidebarGroupContent>
               <SidebarMenu>
-                {filteredItems.map((item) => (
+                {filteredItems.map(item => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)} className="data-[active=true]:bg-black data-[active=true]:text-white hover:bg-gray-100">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={currentPath === item.url}
+                      className="data-[active=true]:bg-black data-[active=true]:text-white hover:bg-gray-100"
+                    >
                       <NavLink to={item.url} end>
                         <item.icon className="w-4 h-4" />
                         {!isCollapsed && <span className="text-sm">{item.title}</span>}

@@ -155,7 +155,7 @@ export default function ItemCategories() {
             />
 
             {loading ? (
-              <p>Loading categories...</p>
+              <p></p>
             ) : categories.length === 0 ? (
               <p className="text-gray-500">No categories found.</p>
             ) : (

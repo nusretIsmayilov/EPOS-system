@@ -279,7 +279,7 @@ export default function AddMenuItemForm({
         </div>
 
         <div>
-          <Label>Category (from item_categories)</Label>
+          <Label>Category </Label>
           <Select
             value={formData.category_id}
             onValueChange={(v) => setFormData((p) => ({ ...p, category_id: v }))}
