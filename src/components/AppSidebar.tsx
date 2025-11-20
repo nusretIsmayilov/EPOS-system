@@ -44,12 +44,15 @@ const mainItems: NavItem[] = [
 const menuItems: NavItem[] = [
   { title: "Menus", url: "/menus", icon: Menu, permissions: ["view_menus"] },
   { title: "Menu Items", url: "/menu-items", icon: Menu, permissions: ["view_menu_items"] },
+  { title: "Item Modifiers", url: "/item-modifiers", icon: Menu, permissions: ["view_menu_items"] },
 
-  // Bunları sadece ADMIN görebilsin
-  { title: "Item Categories", url: "/item-categories", icon: Menu, permissions: ["manage_menu_items"] },
-  { title: "Modifier Groups", url: "/modifier-groups", icon: Menu, permissions: ["manage_menu_items"] },
-  { title: "Item Modifiers", url: "/item-modifiers", icon: Menu, permissions: ["manage_menu_items"] },
+  // Admin-only
+  { title: "Item Categories", url: "/item-categories", icon: Menu, permissions: ["view_menu_items"] },
+{ title: "Modifier Groups", url: "/modifier-groups", icon: Menu, permissions: ["view_menu_items"] },
+
 ];
+
+
 
 const operationsItems: NavItem[] = [
   { title: "Tables", url: "/tables", icon: UtensilsCrossed, permissions: ["view_tables"] },
@@ -67,7 +70,7 @@ const managementItems: NavItem[] = [
 ];
 
 const systemItems: NavItem[] = [
-  { title: "Payments", url: "/payments", icon: CreditCard, permissions: ["manage_payments"] },
+{ title: "Payments", url: "/payments", icon: CreditCard, permissions: ["view_payments"] },
   { title: "Report", url: "/report", icon: BarChart3, permissions: ["view_reports"] },
   { title: "Inventory", url: "/inventory", icon: Package, permissions: ["view_inventory"] },
   { title: "Settings", url: "/settings", icon: Settings, permissions: ["view_settings"] },
@@ -91,7 +94,7 @@ export function AppSidebar() {
 
   const isCollapsed = state === "collapsed";
 
-  
+
   // --- NEW FIX ---
   // Açılması gereken section varsa (aktif path o section’da ise), sadece MOUNT anında aç
   useEffect(() => {
@@ -111,18 +114,18 @@ export function AppSidebar() {
   }, []); // <-- sadece ilk render’da çalışır
 
   const filterItemsByPermission = (items: NavItem[]) => {
-  // Permissions yüklenene kadar, permission isteyen hiçbir item gösterme
-  if (loading || !usePermissions) {
-    return items.filter(item =>
-      !item.permissions || item.permissions.length === 0
-    );
-  }
+    // Permissions yüklenene kadar, permission isteyen hiçbir item gösterme
+    if (loading || !usePermissions) {
+      return items.filter(item =>
+        !item.permissions || item.permissions.length === 0
+      );
+    }
 
-  return items.filter(item => {
-    if (!item.permissions || item.permissions.length === 0) return true;
-    return hasAnyPermission(item.permissions);
-  });
-};
+    return items.filter(item => {
+      if (!item.permissions || item.permissions.length === 0) return true;
+      return hasAnyPermission(item.permissions);
+    });
+  };
 
   const SidebarSection = ({ title, items, sectionKey }: any) => {
     const filteredItems = filterItemsByPermission(items);
@@ -155,7 +158,7 @@ export function AppSidebar() {
                       isActive={currentPath === item.url}
                       className="data-[active=true]:bg-black data-[active=true]:text-white hover:bg-gray-100"
                     >
-                      <NavLink to={item.url} end>
+                      <NavLink to={item.url}>
                         <item.icon className="w-4 h-4" />
                         {!isCollapsed && <span className="text-sm">{item.title}</span>}
                       </NavLink>

@@ -54,7 +54,7 @@ const App = () => (
               {/* Public */}
               <Route path="/auth" element={<Auth />} />
 
-              {/* System Admin (super user) */}
+              {/* System Admin */}
               <Route
                 path="/system-admin"
                 element={
@@ -64,7 +64,7 @@ const App = () => (
                 }
               />
 
-              {/* Dashboard */}
+              {/* Home */}
               <Route
                 path="/"
                 element={
@@ -74,10 +74,11 @@ const App = () => (
                 }
               />
 
+              {/* Dashboard */}
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute requiredPermissions={["view_reports", "view_analytics"]}>
+                  <ProtectedRoute requiredPermissions={["view_reports"]}>
                     <Dashboard />
                   </ProtectedRoute>
                 }
@@ -87,7 +88,7 @@ const App = () => (
               <Route
                 path="/menus"
                 element={
-                  <ProtectedRoute requiredPermissions={["view_menu_items"]}>
+                  <ProtectedRoute requiredPermissions={["view_menus"]}>
                     <Menus />
                   </ProtectedRoute>
                 }
@@ -123,7 +124,7 @@ const App = () => (
               <Route
                 path="/item-modifiers"
                 element={
-                  <ProtectedRoute requiredPermissions={["manage_menu_items"]}>
+                  <ProtectedRoute requiredPermissions={["view_menu_items"]}>
                     <ItemModifiers />
                   </ProtectedRoute>
                 }
@@ -216,7 +217,7 @@ const App = () => (
               <Route
                 path="/payments"
                 element={
-                  <ProtectedRoute requiredPermissions={["manage_payments"]}>
+                  <ProtectedRoute requiredPermissions={["view_payments", "manage_payments"]}>
                     <Payments />
                   </ProtectedRoute>
                 }
@@ -249,7 +250,6 @@ const App = () => (
                 }
               />
 
-              {/* NOT FOUND */}
               <Route path="*" element={<NotFound />} />
 
             </Routes>

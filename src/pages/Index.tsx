@@ -33,6 +33,10 @@ export default function Index() {
       return;
     }
 
+     if (!loading && profile?.role === "customer") {
+    navigate("/pos");
+  }
+
     if (isSystemSuperAdmin) {
       navigate('/system-admin');
       return;
