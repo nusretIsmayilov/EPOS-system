@@ -7,25 +7,32 @@ export default function PaymentSuccess() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 🚫 Strict Mode ve double render engelleme
+    if (localStorage.getItem("payment_processed") === "true") {
+      console.log("⛔ Order already processed — skipping duplicate call.");
+      return;
+    }
+    localStorage.setItem("payment_processed", "true");
+
     const saveOrder = async () => {
       try {
-        // CART VERİSİNİ AL
+        // CART VERİSİ
         const cartString = localStorage.getItem("stripe_checkout_session");
         if (!cartString) return;
 
         const cart = JSON.parse(cartString);
 
-        // MASA BİLGİSİ (URL'DEN)
+        // MASA
         const urlParams = new URLSearchParams(window.location.search);
         const table = urlParams.get("table") ?? "POS";
 
-        // TOPLAM HESAPLA
+        // TOTAL
         const total = cart.reduce(
           (sum: number, item: any) => sum + item.price * item.quantity,
           0
         );
 
-        // KULLANICI BİLGİSİ AL
+        // USER
         const { data: userData } = await supabase.auth.getUser();
         const user = userData?.user;
 
@@ -38,9 +45,7 @@ export default function PaymentSuccess() {
             .eq("user_id", user.id)
             .single();
 
-          if (profile?.full_name) {
-            fullName = profile.full_name;
-          }
+          if (profile?.full_name) fullName = profile.full_name;
         }
 
         // 🔥 1) ORDER EKLE
@@ -63,7 +68,7 @@ export default function PaymentSuccess() {
           return;
         }
 
-        // 🔥 2) ORDER_ITEMS EKLE
+        // 🔥 2) ORDER ITEMS
         const itemsPayload = cart.map((item: any) => ({
           order_id: insertedOrder.id,
           menu_item_id: item.isSet ? null : item.id,
@@ -78,18 +83,35 @@ export default function PaymentSuccess() {
           .insert(itemsPayload);
 
         if (itemsErr) {
-          console.error("Order items insert error:", itemsErr);
+          console.error("Order items error:", itemsErr);
           return;
         }
 
-        // TEMİZLE
+        // 🔥 3) STOK DÜŞ
+        for (const item of cart) {
+          if (!item.isSet) {
+            const { error: invErr } = await supabase.rpc(
+              "decrease_inventory_for_menu_item",
+              {
+                p_menu_item_id: item.id,
+                p_qty: item.quantity,
+              }
+            );
+
+            if (invErr) console.error("Inventory update error:", invErr);
+          }
+        }
+
+        // CART Temizle
         localStorage.removeItem("stripe_checkout_session");
       } catch (err) {
         console.error("PaymentSuccess error:", err);
       } finally {
         setLoading(false);
 
+        // Lock temizle ve redirect
         setTimeout(() => {
+          localStorage.removeItem("payment_processed");
           window.location.href = "/pos";
         }, 1200);
       }
@@ -118,7 +140,7 @@ export default function PaymentSuccess() {
       </h1>
 
       <p className="text-gray-600 text-lg">
-        Your order has been recorded.
+        Your order has been recorded. Updating inventory...
       </p>
     </div>
   );

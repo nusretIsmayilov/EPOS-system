@@ -99,31 +99,47 @@ export default function Orders() {
       return;
     }
     const { data: order } = await supabase
-      .from("orders")
-      .insert([
-        {
-          customer_name: data.customer,
-          table: data.table,
-          status: data.status,
-          time: data.time,
-          total: data.total,
-        },
-      ])
-      .select()
-      .single();
+  .from("orders")
+  .insert([
+    {
+      customer_name: data.customer,
+      table: data.table,
+      status: data.status,
+      time: data.time,
+      total: data.total,
+    },
+  ])
+  .select()
+  .single();
 
-    const items = data.items.map((item: any) => ({
-      order_id: order.id,
-      menu_item_id: item.isSet ? null : item.id,
-      menu_set_id: item.isSet ? item.id : null,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total_price: item.price * item.quantity,
-    }));
-    await supabase.from("order_items").insert(items);
+const items = data.items.map((item: any) => ({
+  order_id: order.id,
+  menu_item_id: item.isSet ? null : item.id,
+  menu_set_id: item.isSet ? item.id : null,
+  quantity: item.quantity,
+  unit_price: item.price,
+  total_price: item.price * item.quantity,
+}));
 
-    setIsFormOpen(false);
-    fetchOrders();
+await supabase.from("order_items").insert(items);
+
+// 🔥 3) STOK AZALT
+for (const item of data.items) {
+  if (!item.isSet) {
+    const { error: invErr } = await supabase.rpc("decrease_inventory_for_menu_item", {
+      p_menu_item_id: item.id,
+      p_qty: item.quantity
+    });
+
+    if (invErr) {
+      console.error("Inventory update error:", invErr);
+    }
+  }
+}
+
+setIsFormOpen(false);
+fetchOrders();
+
   };
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm("Delete order?")) return;

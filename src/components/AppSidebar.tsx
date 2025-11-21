@@ -42,14 +42,12 @@ const mainItems: NavItem[] = [
 ];
 
 const menuItems: NavItem[] = [
-  { title: "Menus", url: "/menus", icon: Menu, permissions: ["view_menus"] },
+  { title: "Menus", url: "/menus", icon: Menu, permissions: ["view_menu_items"] },
   { title: "Menu Items", url: "/menu-items", icon: Menu, permissions: ["view_menu_items"] },
   { title: "Item Modifiers", url: "/item-modifiers", icon: Menu, permissions: ["view_menu_items"] },
 
-  // Admin-only
   { title: "Item Categories", url: "/item-categories", icon: Menu, permissions: ["view_menu_items"] },
-{ title: "Modifier Groups", url: "/modifier-groups", icon: Menu, permissions: ["view_menu_items"] },
-
+  { title: "Modifier Groups", url: "/modifier-groups", icon: Menu, permissions: ["view_menu_items"] },
 ];
 
 

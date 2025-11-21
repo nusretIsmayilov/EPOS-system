@@ -106,7 +106,7 @@ const App = () => (
               <Route
                 path="/item-categories"
                 element={
-                  <ProtectedRoute requiredPermissions={["manage_menu_items"]}>
+                  <ProtectedRoute requiredPermissions={["view_menu_items"]}>
                     <ItemCategories />
                   </ProtectedRoute>
                 }
@@ -115,7 +115,7 @@ const App = () => (
               <Route
                 path="/modifier-groups"
                 element={
-                  <ProtectedRoute requiredPermissions={["manage_menu_items"]}>
+                  <ProtectedRoute requiredPermissions={["view_menu_items"]}>
                     <ModifierGroups />
                   </ProtectedRoute>
                 }
@@ -217,7 +217,7 @@ const App = () => (
               <Route
                 path="/payments"
                 element={
-                  <ProtectedRoute requiredPermissions={["view_payments", "manage_payments"]}>
+                  <ProtectedRoute requiredPermissions={["view_payments"]}>
                     <Payments />
                   </ProtectedRoute>
                 }
