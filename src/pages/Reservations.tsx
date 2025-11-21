@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, Users, Phone, Edit, Trash2 } from "lucide-react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Reservations() {
   const [reservations, setReservations] = useState<any[]>([]);
@@ -281,6 +282,7 @@ export default function Reservations() {
         onDateChange={handleDateChange}
         onTimeChange={handleTimeChange}
       />
+      <AIChatbot section="reservations" context="Reservations management page" />
     </SidebarProvider>
   );
 }

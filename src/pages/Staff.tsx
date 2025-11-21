@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { PermissionGate } from "@/components/PermissionGate";
 import { Plus, Phone, Mail, Clock, User, Shield } from "lucide-react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Staff() {
   const staff = [
@@ -151,6 +152,7 @@ export default function Staff() {
           </div>
         </main>
       </div>
+      <AIChatbot section="staff" context="Staff management page" />
     </SidebarProvider>
   );
 }

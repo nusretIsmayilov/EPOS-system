@@ -4,19 +4,20 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
+import { createClient } from "@supabase/supabase-js";
+import { AIChatbot } from "@/components/ai/AIChatbot";
+
+const supabaseUrl = "https://vhvjfndzluxlmlnrkagj.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodmpmbmR6bHV4bG1sbnJrYWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODEwMjc3NywiZXhwIjoyMDczNjc4Nzc3fQ.nv8Jo0sbaFUWUYSfgcpwd5zM3x-Nrq8O4VYnRwziUpI";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function ItemCategories() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<any>({});
-  const [categories, setCategories] = useState([
-    { id: 1, name: "Main Course", items: 12, description: "Primary dishes and entrees" },
-    { id: 2, name: "Appetizers", items: 8, description: "Starter dishes and small plates" },
-    { id: 3, name: "Beverages", items: 15, description: "Drinks and refreshments" },
-    { id: 4, name: "Desserts", items: 6, description: "Sweet treats and desserts" },
-    { id: 5, name: "Seafood", items: 5, description: "Fresh fish and seafood dishes" },
-  ]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fields = [
     {
@@ -37,40 +38,80 @@ export default function ItemCategories() {
     },
   ];
 
-  const handleSave = (data: any) => {
+  // 🔹 Fetch categories from Supabase
+  const fetchCategories = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("item_categories")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) console.error("Fetch error:", error);
+    else setCategories(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // 🔹 Add or Update Category
+  const handleSave = async (data: any) => {
     if (!data.name || !data.description) {
-      window.alert("Please fill in both Name and Description before saving.");
+      alert("Please fill in both Name and Description before saving.");
       return;
     }
 
+    let error = null;
+
     if (data.id) {
-      // update
-      setCategories((prev) =>
-        prev.map((c) => (c.id === data.id ? { ...c, ...data } : c))
-      );
+      // Update existing category
+      const { error: updateError } = await supabase
+        .from("item_categories")
+        .update({
+          name: data.name,
+          description: data.description,
+        })
+        .eq("id", data.id);
+      error = updateError;
     } else {
-      // new
-      setCategories((prev) => [
-        ...prev,
-        { id: Date.now(), name: data.name, description: data.description, items: 0 },
-      ]);
+      // Insert new category
+      const { error: insertError } = await supabase
+        .from("item_categories")
+        .insert([
+          { name: data.name, description: data.description, items_count: 0 },
+        ]);
+      error = insertError;
     }
 
-    setModalOpen(false);
-    setActiveCategory({});
+    if (error) {
+      alert("Error saving category: " + error.message);
+    } else {
+      setModalOpen(false);
+      setActiveCategory({});
+      fetchCategories();
+    }
   };
 
+  // 🔹 Edit category
   const handleEdit = (category: any) => {
     setActiveCategory(category);
     setModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  // 🔹 Delete category
+  const handleDelete = async (id: string) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this category?"
     );
     if (!confirmDelete) return;
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+
+    const { error } = await supabase
+      .from("item_categories")
+      .delete()
+      .eq("id", id);
+
+    if (error) alert("Error deleting: " + error.message);
+    else fetchCategories();
   };
 
   const handleCancel = () => {
@@ -88,17 +129,23 @@ export default function ItemCategories() {
               <SidebarTrigger />
               <div>
                 <h1 className="text-2xl font-bold">Item Categories</h1>
-                <p className="text-muted-foreground">Organize menu items by category</p>
+                <p className="text-muted-foreground">
+                  Organize menu items by category
+                </p>
               </div>
             </div>
-            <Button onClick={() => setModalOpen(true)}>
+            <Button
+              onClick={() => {
+                setActiveCategory({});
+                setModalOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add Category
             </Button>
           </PageHeader>
 
           <div className="flex-1 p-6">
-            {/* Modal */}
             <UpdateDataForm
               initialData={activeCategory}
               fields={fields}
@@ -107,41 +154,51 @@ export default function ItemCategories() {
               onSave={handleSave}
             />
 
-            {/* Categories list */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {categories.map((category) => (
-                <Card key={category.id}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-lg font-medium">{category.name}</CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(category)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(category.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">{category.description}</p>
-                      <p className="text-sm font-medium">{category.items} items</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {loading ? (
+              <p></p>
+            ) : categories.length === 0 ? (
+              <p className="text-gray-500">No categories found.</p>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {categories.map((category) => (
+                  <Card key={category.id}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-lg font-medium">
+                        {category.name}
+                      </CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(category)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(category.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {category.description}
+                      </p>
+                      <p className="text-sm font-medium">
+                        {category.items_count} items
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>
+      <AIChatbot section="categories" context="Item categories management page" />
     </SidebarProvider>
   );
 }

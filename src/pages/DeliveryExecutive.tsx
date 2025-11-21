@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Phone, MapPin, Truck, Clock, User } from "lucide-react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function DeliveryExecutive() {
   const executives = [
@@ -153,6 +154,7 @@ export default function DeliveryExecutive() {
           </div>
         </main>
       </div>
+      <AIChatbot section="delivery" context="Delivery executive page" />
     </SidebarProvider>
   );
 }

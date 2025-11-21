@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, DollarSign } from "lucide-react";
 import { useState } from "react";
 import UpdateDataForm from "@/components/modals/UpdateDataForm";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function ItemModifiers() {
   const [modifiers, setModifiers] = useState([
@@ -250,6 +251,7 @@ export default function ItemModifiers() {
           </div>
         </main>
       </div>
+      <AIChatbot section="modifiers" context="Modifiers management page" />
     </SidebarProvider>
   );
 }

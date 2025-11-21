@@ -193,8 +193,8 @@ export default function Auth() {
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>Demo Accounts:</p>
-            <p>Admin: admin@demo.com | password123</p>
-            <p>Staff: staff@demo.com | password123</p>
+            <p>Super Admin: df5hh@2200freefonts.com | password123</p>
+            <p>Customer: bci1i@2200freefonts.com | password123</p>
           </div>
         </CardContent>
       </Card>

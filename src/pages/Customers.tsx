@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Phone, Mail, MapPin, Star } from "lucide-react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Customers() {
   const customers = [
@@ -117,6 +118,7 @@ export default function Customers() {
           </div>
         </main>
       </div>
+      <AIChatbot section="customers" context="Customers page" />
     </SidebarProvider>
   );
 }

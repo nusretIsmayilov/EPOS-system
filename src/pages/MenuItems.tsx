@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -10,136 +11,82 @@ import { AIChatbot } from "@/components/ai/AIChatbot";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import UpdateDataForm from "@/components/modals/UpdateDataForm";
-import { MenuItem } from "@/integrations/supabase/types";
-import { useEffect, useState } from "react";
+import AddMenuItemForm from "@/components/modals/AddMenuItemForm";
 
-export interface MenuItemModified extends MenuItem {
-  menu_categories?: {
-    name: string;
-  } | null;
+export interface Ingredient {
+  inventory_id: number;
+  quantity: number;
+  unit?: string;
+  item_name?: string;
 }
 
-const fields = [
-  {
-    id: 0,
-    label: "Name",
-    name: "name",
-    type: "text",
-    placeholder: "Enter name",
-    isRequired: true,
-  },
-  {
-    id: 1,
-    label: "Price",
-    name: "price",
-    type: "number",
-    placeholder: "Enter price",
-    isRequired: true,
-  },
-  {
-    id: 3,
-    label: "Availability",
-    name: "is_available",
-    type: "select",
-    isRequired: true,
-    selectItems: [
-      { id: 0, value: "true", label: "True" },
-      { id: 1, value: "false", label: "False" },
-    ],
-  },
-  {
-    id: 4,
-    label: "Description",
-    name: "description",
-    type: "text",
-    placeholder: "Enter description",
-  },
-  {
-    id: 5,
-    label: "Preparation Time",
-    name: "prep_time",
-    type: "number",
-    placeholder: "Enter preparation time",
-  },
-  {
-    id: 6,
-    label: "Calories",
-    name: "calories",
-    type: "number",
-    placeholder: "Enter calories",
-  },
-];
+export interface MenuItemModified {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  is_available: boolean;
+  prep_time?: number;
+  calories?: number;
+  menu_categories?: { name: string } | null;
+  ingredients?: Ingredient[];
+}
 
 export default function MenuItems() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [activeMenuItem, setActiveMenuItem] = useState<
-    MenuItemModified | object
-  >({});
+  const [activeMenuItem, setActiveMenuItem] = useState<MenuItemModified | null>(
+    null
+  );
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!modalOpen) {
-      setActiveMenuItem({});
-    }
-  }, [modalOpen]);
-
-  const { data: menuItems, isLoading } = useQuery({
+  const { data: menuItems, isLoading } = useQuery<MenuItemModified[]>({
     queryKey: ["menu-items"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("menu_items")
         .select(
           `
-          *,
-          menu_categories (
-            name
-          )
-        `
+    *,
+    menu_categories(name),
+    menu_item_ingredients (
+      inventory_id,
+      quantity,
+      inventory:inventory_id (item_name, unit)
+    )
+  `
         )
         .order("name");
 
       if (error) throw error;
-      return data as MenuItemModified[];
+
+      // normalize ingredients
+      return (data || []).map(
+        (item: any): MenuItemModified => ({
+          id: String(item.id),
+          name: item.name,
+          price: item.price,
+          description: item.description,
+          is_available: item.is_available,
+          prep_time: item.prep_time,
+          calories: item.calories,
+          menu_categories: item.menu_categories ?? null,
+          ingredients:
+            item.menu_item_ingredients?.map((ing: any) => ({
+              inventory_id: ing.inventory_id,
+              quantity: ing.quantity,
+              unit: ing.inventory?.unit,
+              item_name: ing.inventory?.item_name,
+            })) ?? [],
+        })
+      );
     },
   });
 
-  const handleSave = async (item: Partial<MenuItemModified>) => {
-    if (item.id) {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .update({
-          name: item.name,
-          price: item.price,
-          description: item.description,
-          is_available: String(item.is_available) === "true", // convert from string
-          prep_time: item.prep_time,
-          calories: item.calories,
-        })
-        .eq("id", item.id)
-        .select();
-
-      if (error) console.error(error);
-    } else {
-      const { error } = await supabase.from("menu_items").insert([
-        {
-          name: item.name,
-          price: item.price,
-          description: item.description,
-          is_available: String(item.is_available) === "true",
-          prep_time: item.prep_time,
-          calories: item.calories,
-        },
-      ]);
-
-      if (error) console.error(error);
-    }
-
-    queryClient.invalidateQueries({ queryKey: ["menu-items"] });
-
+  const handleSave = () => {
+    queryClient.invalidateQueries({ queryKey: ["menu-items"] as const });
     setModalOpen(false);
-    setActiveMenuItem({});
+    setActiveMenuItem(null);
   };
 
   const handleEdit = (item: MenuItemModified) => {
@@ -148,25 +95,14 @@ export default function MenuItems() {
   };
 
   const handleDelete = async (id: string) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this menu item?"
-    );
-    if (!confirmDelete) return;
+    if (!window.confirm("Are you sure you want to delete this menu item?"))
+      return;
 
     const { error } = await supabase.from("menu_items").delete().eq("id", id);
 
-    if (error) {
-      console.error("Error deleting item:", error.message);
-      return;
-    }
+    if (error) console.error(error);
 
-    queryClient.setQueryData<MenuItemModified[]>(["menu-items"], (old) =>
-      old ? old.filter((item) => item.id !== id) : []
-    );
-  };
-
-  const handleCancel = () => {
-    setModalOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["menu-items"] as const });
   };
 
   return (
@@ -193,16 +129,15 @@ export default function MenuItems() {
           </PageHeader>
 
           <div className="flex-1 p-6">
-            <UpdateDataForm
-              initialData={activeMenuItem}
-              fields={fields}
+            <AddMenuItemForm
               isOpen={modalOpen}
-              onCancel={handleCancel}
-              onSave={(item) => handleSave(item)}
+              initialData={activeMenuItem}
+              onCancel={() => setModalOpen(false)}
+              onSave={handleSave}
             />
+
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {isLoading ? (
-                // Loading skeletons
                 Array.from({ length: 6 }).map((_, i) => (
                   <Card key={i}>
                     <CardHeader>
@@ -232,7 +167,7 @@ export default function MenuItems() {
                   )}
                 </div>
               ) : (
-                menuItems?.map((item) => (
+                menuItems.map((item) => (
                   <Card
                     key={item.id}
                     className="hover:shadow-md transition-shadow"
@@ -265,13 +200,27 @@ export default function MenuItems() {
                           {item.description}
                         </p>
                       )}
-                      <div className="flex items-center justify-between">
+
+                      <div className="flex flex-col gap-1">
+                        {item.ingredients?.map((ing, idx) => (
+                          <span
+                            key={ing.inventory_id ?? `ingredient-${idx}`}
+                            className="text-sm text-muted-foreground"
+                          >
+                            {ing.item_name ?? "Unnamed"} - {ing.quantity ?? "?"}{" "}
+                            {ing.unit ?? ""}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-1">
                           <DollarSign className="w-4 h-4 text-green-600" />
                           <span className="text-lg font-semibold text-green-600">
                             {item.price.toFixed(2)}
                           </span>
                         </div>
+
                         {isAdmin && (
                           <div className="flex gap-2">
                             <Button
@@ -302,7 +251,7 @@ export default function MenuItems() {
 
       <AIChatbot
         section="menu"
-        context="Menu items management page - viewing all menu items with prices and availability status"
+        context="Menu items management page with ingredients, price and availability"
       />
     </SidebarProvider>
   );

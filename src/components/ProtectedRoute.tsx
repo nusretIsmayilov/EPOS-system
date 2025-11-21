@@ -1,57 +1,33 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+// ProtectedRoute.tsx
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requireAdmin?: boolean;
-  requireStaff?: boolean;
-}
+export function ProtectedRoute({ children, requireStaff, requireAdmin, requiredPermissions }: any) {
+  const { profile, loading: profileLoading } = useAuth();
+  const { hasAnyPermission, loading: permLoading } = usePermissions();
 
-export function ProtectedRoute({ 
-  children, 
-  requireAdmin = false, 
-  requireStaff = false 
-}: ProtectedRouteProps) {
-  const { user, profile, loading, isAdmin, isStaff } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+  if (profileLoading || permLoading) {
+    return <div></div>;
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
+  if (!profile) {
+    return <Navigate to="/auth" />;
   }
 
-  if (requireAdmin && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">You need administrator privileges to access this page.</p>
-        </div>
-      </div>
-    );
+  // ROLE-BAZLI KONTROL
+  if (requireAdmin && profile.role !== "admin" && profile.role !== "super_admin") {
+    return <Navigate to="/" />;
   }
 
-  if (requireStaff && !isStaff) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">You need staff privileges to access this page.</p>
-        </div>
-      </div>
-    );
+  if (requireStaff && !["admin", "super_admin", "manager", "owner", "front_staff", "kitchen_staff"].includes(profile.role)) {
+    return <Navigate to="/" />;
   }
 
-  return <>{children}</>;
+  // PERMISSION-BAZLI KONTROL
+  if (requiredPermissions && !hasAnyPermission(requiredPermissions)) {
+    return <Navigate to="/" />;
+  }
+
+  return children;
 }

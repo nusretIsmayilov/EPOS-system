@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function WaiterRequests() {
   const requests = [
@@ -120,6 +121,7 @@ export default function WaiterRequests() {
           </div>
         </main>
       </div>
+      <AIChatbot section="waiter-requests" context="Waiter request page" />
     </SidebarProvider>
   );
 }

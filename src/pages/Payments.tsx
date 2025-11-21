@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, DollarSign, Clock, CheckCircle, XCircle } from "lucide-react";
+import { AIChatbot } from "@/components/ai/AIChatbot";
 
 export default function Payments() {
   const payments = [
@@ -146,6 +147,7 @@ export default function Payments() {
           </div>
         </main>
       </div>
+      <AIChatbot section="payments" context="Payments page" />
     </SidebarProvider>
   );
 }
